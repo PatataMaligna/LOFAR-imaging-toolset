@@ -10,7 +10,11 @@ obs000001          A group per observation (numbering is arbitrary)
                    Same ordering as xst_data
   sky_img          Sky image data as matrix of real numbers
   ground_imgs      Group for ground images
+<<<<<<< HEAD
     ground_img000  Ground image as matrix of real numbers
+=======
+  ground_img000  Ground image as matrix of real numbers
+>>>>>>> ba93053 (Added new sources + new elevation and azimuth subtext in graph + new videoMaker script)
 
 Per observation, the following attributes are used:
  * frequency       Frequency in Hz
@@ -113,7 +117,9 @@ def write_hdf5(filename: str, xst_data: np.ndarray, visibilities: np.ndarray, sk
         obs_group.attrs["subband"] = subband
         obs_group.attrs["station_name"] = short_station_name
         obs_group.attrs["source_names"] = list(bodies_lmn.keys())
-        obs_group.attrs["source_lmn"] = np.array(list(bodies_lmn.values()))
+        obs_group.attrs["source_lmn"] = np.array([data['lmn'] for data in bodies_lmn.values()])
+        obs_group.attrs["source_elevations"] = np.array([data['elevation'] for data in bodies_lmn.values()])
+        obs_group.attrs["source_azimuths"] = np.array([data['azimuth'] for data in bodies_lmn.values()])
 
         obs_group.create_dataset("xst_data", data=xst_data, compression="gzip")
         obs_group.create_dataset("calibrated_data", data=visibilities, compression="gzip")

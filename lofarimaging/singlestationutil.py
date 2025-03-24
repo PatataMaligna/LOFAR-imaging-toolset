@@ -2,6 +2,7 @@
 
 import os
 import datetime
+import configparser
 from typing import List, Dict, Tuple, Union
 
 import numpy as np
@@ -19,7 +20,7 @@ from matplotlib.patches import Circle
 import matplotlib.axes as maxes
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from astropy.coordinates import SkyCoord, GCRS, EarthLocation, AltAz, get_sun, get_moon
+from astropy.coordinates import SkyCoord, GCRS, EarthLocation, AltAz, get_sun, get_body
 import astropy.units as u
 from astropy.time import Time
 
@@ -161,10 +162,16 @@ def find_caltable(field_name: str, rcu_mode: Union[str, int], caltable_dir='calt
 
     if os.path.exists(os.path.join(caltable_dir, filename)):
         # All caltables in one directory
-        return os.path.join(caltable_dir, filename)
+        # return os.path.normpath(os.path.join(caltable_dir, filename))
+        ###TO pass the test as windows user
+        path = os.path.normpath(os.path.join(caltable_dir, filename))
+        return path.replace("\\", "/") 
     elif os.path.exists(os.path.join(caltable_dir, station, filename)):
         # Caltables in a directory per station
-        return os.path.join(caltable_dir, station, filename)
+        # return os.path.normpath(os.path.join(caltable_dir, station, filename))
+        ###TO pass the test as windows user
+        path = os.path.normpath(os.path.join(caltable_dir, station, filename))
+        return path.replace("\\", "/") 
     else:
         return None
 
@@ -314,7 +321,7 @@ def get_station_pqr(station_name: str, rcu_mode: Union[str, int], db):
         >>> pqr.shape
         (96, 3)
         >>> pqr[0, 0]
-        1.7434713
+        np.float32(1.7434713)
 
         >>> pqr = get_station_pqr("LV614", "5", db)
         >>> pqr.shape
@@ -519,10 +526,23 @@ def make_sky_plot(image: np.ndarray, marked_bodies_lmn: Dict[str, Tuple[float, f
     ax.set_xlabel('$ℓ$', fontsize=14)
     ax.set_ylabel('$m$', fontsize=14)
 
-    ax.text(0.5, 1.05, title, fontsize=17, ha='center', va='bottom', transform=ax.transAxes)
-    ax.text(0.5, 1.02, subtitle, fontsize=12, ha='center', va='bottom', transform=ax.transAxes)
+    # ax.text(0.5, 1.05, title, fontsize=17, ha='center', va='bottom', transform=ax.transAxes)
+    # ax.text(0.5, 1.02, subtitle, fontsize=12, ha='center', va='bottom', transform=ax.transAxes)
+    ax.set_title(f"{title}", fontsize=14, pad=200)
 
-    for body_name, lmn in marked_bodies_lmn.items():
+    # Ajustamos la posición con transform=ax.transAxes
+    ax.text(
+        0.5,       # x en coordenadas del eje (0 a 1)
+        1.02,      # un poco más arriba del 1.0 (límite del eje)
+        subtitle,
+        transform=ax.transAxes,
+        ha='center',
+        va='bottom',
+        fontsize=12
+    )
+
+    for body_name, data in marked_bodies_lmn.items():
+        lmn = data['lmn']
         ax.plot([lmn[0]], [lmn[1]], marker='x', color='black', mew=0.5)
         ax.annotate(body_name, (lmn[0], lmn[1]))
 
@@ -531,6 +551,8 @@ def make_sky_plot(image: np.ndarray, marked_bodies_lmn: Dict[str, Tuple[float, f
     ax.text(-0.9, 0, 'W', horizontalalignment='center', verticalalignment='center', color='w', fontsize=17)
     ax.text(0, 0.9, 'N', horizontalalignment='center', verticalalignment='center', color='w', fontsize=17)
     ax.text(0, -0.9, 'S', horizontalalignment='center', verticalalignment='center', color='w', fontsize=17)
+
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
 
     return fig
 
@@ -609,20 +631,22 @@ def make_xst_plots(xst_data: np.ndarray,
                    obstime: datetime.datetime,
                    subband: int,
                    rcu_mode: int,
-                   caltable_dir: str = "CalTables",
+                   caltable_dir: str = "./test/CalTables",
                    extent: List[float] = None,
+                   sources_file: str = None,
                    pixels_per_metre: float = 0.5,
                    sky_vmin: float = None,
                    sky_vmax: float = None,
                    ground_vmin: float = None,
                    ground_vmax: float = None,
                    height: float = 1.5,
-                   map_zoom: int = 19,
+                   map_zoom: int = 18,
                    sky_only: bool = False,
                    opacity: float = 0.6,
                    hdf5_filename: str = None,
                    outputpath: str = "results",
-                   subtract: List[str] = None):
+                   subtract: List[str] = None,
+                   subtract_sources: List[str] = None):
     """
     Create sky and ground plots for an XST file
 
@@ -634,6 +658,7 @@ def make_xst_plots(xst_data: np.ndarray,
         rcu_mode: RCU mode
         caltable_dir: Caltable directory. Defaults to "CalTables".
         extent: Extent (in m) for ground image. Defaults to [-150, 150, -150, 150]
+        sources_file: File with sources to annotate. Defaults to None.
         pixels_per_metre: Pixels per metre. Defaults to 0.5.
         height: Height (in m) for ground image. Defaults to 1.5.
         map_zoom: Zoom level for map tiles. Defaults to 19.
@@ -642,6 +667,7 @@ def make_xst_plots(xst_data: np.ndarray,
         hdf5_filename: Filename where hdf5 results can be written. Defaults to outputpath + '/results.h5'
         outputpath: Directory where results can be saved. Defaults to 'results'
         subtract: List of sources to subtract. Defaults to None
+        subtract_sources: List of sources to subtract. Defaults to None
 
 
     Returns:
@@ -681,6 +707,12 @@ def make_xst_plots(xst_data: np.ndarray,
 
     os.makedirs(outputpath, exist_ok=True)
 
+    if sources_file is None:
+        sources_file = "sources.ini"
+
+    config = configparser.ConfigParser()
+    config.read(sources_file)
+
     fname = f"{obstime:%Y%m%d}_{obstime:%H%M%S}_{station_name}_SB{subband}"
 
     npix_l, npix_m = 131, 131
@@ -713,33 +745,64 @@ def make_xst_plots(xst_data: np.ndarray,
     gcrs_instance = GCRS(obstime = obstime_astropy)
     zenith = AltAz(az=0 * u.deg, alt=90 * u.deg, obstime=obstime_astropy,
                    location=station_earthlocation).transform_to(gcrs_instance)
-
+    
+    # print(float(config['Cas A']['RA']) * u.deg, config['Cas A']['RA'])
     # Determine positions of potential sources of strong emission
     marked_bodies = {
-        'Cas A': SkyCoord(ra=350.85 * u.deg, dec=58.815 * u.deg),
-        'Cyg A': SkyCoord(ra=299.86815191 * u.deg, dec=40.73391574 * u.deg),
-        'Per A': SkyCoord(ra=49.95066567*u.deg, dec=41.51169838 * u.deg),
-        'Her A': SkyCoord(ra=252.78343333*u.deg, dec=4.99303056*u.deg),
-        'Cen A': SkyCoord(ra=201.36506288*u.deg, dec=-43.01911267*u.deg),
-        'Vir A': SkyCoord(ra=187.70593076*u.deg, dec=12.39112329*u.deg),
-        '3C295': SkyCoord(ra=212.83527917*u.deg, dec=52.20264444*u.deg),
-        'Moon': get_moon(time=obstime_astropy, location=station_earthlocation).transform_to(gcrs_instance),
+        'Cas A': SkyCoord(ra=float(config['Cas A']['RA']) * u.deg, dec=float(config['Cas A']['DEC']) * u.deg),
+        'Cyg A': SkyCoord(ra=float(config['Cyg A']['RA']) * u.deg, dec=float(config['Cyg A']['DEC']) * u.deg),
+        'Per A': SkyCoord(ra=float(config['Per A']['RA']) * u.deg, dec=float(config['Per A']['DEC']) * u.deg),
+        'Her A': SkyCoord(ra=float(config['Her A']['RA']) * u.deg, dec=float(config['Her A']['DEC']) * u.deg),
+        'Cen A': SkyCoord(ra=float(config['Cen A']['RA']) * u.deg, dec=float(config['Cen A']['DEC']) * u.deg),
+        'Vir A': SkyCoord(ra=float(config['Vir A']['RA']) * u.deg, dec=float(config['Vir A']['DEC']) * u.deg),
+        '3C295': SkyCoord(ra=float(config['3C295']['RA']) * u.deg, dec=float(config['3C295']['DEC']) * u.deg),
+        'Moon': get_body('moon', time=obstime_astropy),
         'Sun': get_sun(time=obstime_astropy).transform_to(gcrs_instance),
-        '3C196': SkyCoord(ra=123.40023371*u.deg, dec=48.21739888*u.deg)
+        '3C196': SkyCoord(ra=float(config['3C196']['RA']) * u.deg, dec=float(config['3C196']['DEC']) * u.deg),
+        # SkyCoord("23 23 26.0 +58 48 41", unit=(u.hourangle, u.deg))
+        # 'J0133-3629': [1.0440, -0.662, -0.225],
+        '3C48': SkyCoord(config['3C48']['ICRS_coord'], unit=(u.hourangle, u.deg)),
+        'For A': SkyCoord(config['For A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
+        '3C123': SkyCoord(config['3C123']['ICRS_coord'], unit=(u.hourangle, u.deg)),
+        # 'J0444-2809': [0.9710, -0.894, -0.118],
+        '3C138': SkyCoord(config['3C138']['ICRS_coord'], unit=(u.hourangle, u.deg)),
+        'Pic A': SkyCoord(config['Pic A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
+        'Tau A': SkyCoord(config['Tau A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
+        '3C147': SkyCoord(config['3C147']['ICRS_coord'], unit=(u.hourangle, u.deg)),
+        # 'Hyd A': [1.7795, -0.9176, -0.084, -0.0139, 0.030],
+        '3C286': SkyCoord(config['3C286']['ICRS_coord'], unit=(u.hourangle, u.deg)),
+        '3C353': SkyCoord(config['3C353']['ICRS_coord'], unit=(u.hourangle, u.deg)),
+        '3C380': SkyCoord(config['3C380']['ICRS_coord'], unit=(u.hourangle, u.deg)),
+        '3C444': SkyCoord(config['3C444']['ICRS_coord'], unit=(u.hourangle, u.deg)),
+        # 'casa': [3.3584, -0.7518, -0.035, -0.071]
     }
+
+    if subtract_sources is not None:
+        marked_bodies = {key: value for key, value in marked_bodies.items() if key in subtract_sources} 
 
     marked_bodies_lmn = {}
     for body_name, body_coord in marked_bodies.items():
-        # print(body_name, body_coord.separation(zenith), body_coord.separation(zenith))
-        if body_coord.transform_to(AltAz(location=station_earthlocation, obstime=obstime_astropy)).alt > 0:
-            marked_bodies_lmn[body_name] = skycoord_to_lmn(marked_bodies[body_name], zenith)
+        # print(body_name, body_coord.separation(zenith), body_coord.transform_to(AltAz(location=station_earthlocation, obstime=obstime_astropy)).alt)
+        altaz = body_coord.transform_to(AltAz(location=station_earthlocation, obstime=obstime_astropy))
+        if altaz.alt > 0:
+            marked_bodies_lmn[body_name] = {
+                'lmn' : skycoord_to_lmn(marked_bodies[body_name], zenith),
+                'elevation': altaz.alt.deg,
+                'azimuth': altaz.az.deg
+            }
 
     if subtract is not None:
         visibilities_stokes_i = subtract_sources(visibilities_stokes_i, baselines, freq, marked_bodies_lmn, subtract)
-
+        
     sky_img = sky_imager(visibilities_stokes_i, baselines, freq, npix_l, npix_m)
 
     marked_bodies_lmn_only3 = {k: v for (k, v) in marked_bodies_lmn.items() if k in ('Cas A', 'Cyg A', 'Sun')}
+
+    # altaz_frame = AltAz(location=station_earthlocation, obstime=obstime_astropy)
+    # cas_a_altaz = marked_bodies['Cas A'].transform_to(altaz_frame)
+
+    # cas_a_el = cas_a_altaz.alt.deg
+    # cas_a_az = cas_a_altaz.az.deg
 
     # Plot the resulting sky image
     sky_fig = plt.figure(figsize=(10, 10))
@@ -748,8 +811,16 @@ def make_xst_plots(xst_data: np.ndarray,
         # Tendency to oversubtract, we don't want to see that
         sky_vmin = np.quantile(sky_img, 0.05)
 
-    make_sky_plot(sky_img, marked_bodies_lmn_only3, title=f"Sky image for {station_name}",
-                  subtitle=f"SB {subband} ({freq / 1e6:.1f} MHz), {str(obstime)[:16]}", fig=sky_fig,
+    bodies_info = "\n".join(
+        [f"{name}: Elevation {data['elevation']:.2f}°, Azimuth {data['azimuth']:.2f}°"
+        for name, data in marked_bodies_lmn.items()]
+    )
+
+    subtitle_text = (f"SB {subband} ({freq / 1e6:.1f} MHz), {str(obstime)[:16]}\n" + bodies_info)
+
+    make_sky_plot(sky_img, marked_bodies_lmn, title=f"Sky image for {station_name}",
+                  subtitle=subtitle_text,
+                  fig=sky_fig,
                   vmin=sky_vmin, vmax=sky_vmax)
 
     sky_fig.savefig(os.path.join(outputpath, f'{fname}_sky_calibrated.png'), bbox_inches='tight', dpi=200)
@@ -833,12 +904,32 @@ def make_sky_movie(moviefilename: str, h5file: h5py.File, obsnums: List[str], vm
         freq = obs_h5.attrs["frequency"]
         station_name = obs_h5.attrs["station_name"]
         subband = obs_h5.attrs["subband"]
-        marked_bodies_lmn = dict(zip(obs_h5.attrs["source_names"], obs_h5.attrs["source_lmn"]))
-        if marked_bodies is not None:
-            marked_bodies_lmn = {k: v for k, v in marked_bodies_lmn.items() if k in marked_bodies}
+        marked_bodies_lmn = {
+            name: {
+                'lmn': lmn,
+                'elevation': elevation,
+                'azimuth': azimuth
+            }
+            for name, lmn, elevation, azimuth in zip(
+                obs_h5.attrs["source_names"], 
+                obs_h5.attrs["source_lmn"], 
+                obs_h5.attrs["source_elevations"], 
+                obs_h5.attrs["source_azimuths"]
+            )
+        }
+
+        bodies_info = "\n".join(
+            [f"{name}: Elevation {data['elevation']:.2f}°, Azimuth {data['azimuth']:.2f}°"
+            for name, data in marked_bodies_lmn.items()]
+        )
+
+        subtitle_text = (f"SB {subband} ({freq / 1e6:.1f} MHz), {str(obstime)[:16]}\n" + bodies_info)
+        
+        # if marked_bodies is not None:
+        #     marked_bodies_lmn = {k: v for k, v in marked_bodies_lmn.items() if k in marked_bodies}
         make_sky_plot(skydata_h5[:, :], marked_bodies_lmn,
                       title=f"Sky image for {station_name}",
-                      subtitle=f"SB {subband} ({freq / 1e6:.1f} MHz), {str(obstime)[:16]}",
+                      subtitle=subtitle_text,
                       animated=True, fig=fig, label=obsnum, vmin=vmin, vmax=vmax)
 
     # Thanks to Maaijke Mevius for making this animation work!

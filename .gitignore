@@ -1,3 +1,11 @@
+
+envLofar/
+sorted_subbands/
+videoResults/
+.vscode/
+movies/
+imgSameSubband/*
+
 results/*
 CalTables/*
 tilecache/*
@@ -119,7 +127,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
+envLofar/
 # Spyder project settings
 .spyderproject
 .spyproject
