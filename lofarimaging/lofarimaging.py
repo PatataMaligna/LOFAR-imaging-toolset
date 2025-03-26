@@ -125,17 +125,10 @@ def nearfield_imager(visibilities, baseline_indices, freqs, npix_p, npix_q, exte
         np.add(distances[baseline_indices[vis_chunkstart:vis_chunkend, 0]],
                -distances[baseline_indices[vis_chunkstart:vis_chunkend, 1]], out=bl_diff_chunk)
 
-<<<<<<< HEAD
-        # j2pi = 1j * 2 * np.pi
-        for ifreq, freq in enumerate(freqs):
-            # v = visibilities[vis_chunkstart:vis_chunkend, ifreq][:, None, None]
-            # lamb = SPEED_OF_LIGHT / freq
-=======
         j2pi = 1j * 2 * np.pi
         for ifreq, freq in enumerate(freqs):
             v = visibilities[vis_chunkstart:vis_chunkend, ifreq][:, None, None]
             lamb = SPEED_OF_LIGHT / freq
->>>>>>> ba93053 (Added new sources + new elevation and azimuth subtext in graph + new videoMaker script)
 
             # v[:,np.newaxis,np.newaxis]*np.exp(-2j*np.pi*freq/c*groundbase_pixels[:,:,:]/c)
             # groundbase_pixels=nvis x npix x npix
@@ -214,11 +207,7 @@ def subtract_sources(vis: np.array, baselines: np.array, freq: float, lmn_dict: 
     Returns:
         vis (np.array): visibility matrix with sources subtracted
     """
-<<<<<<< HEAD
-    modelvis = [simulate_sky_source(lmn_dict[srcname], baselines, freq) for srcname in lmn_dict
-=======
     modelvis = [simulate_sky_source(lmn_dict[srcname]['lmn'], baselines, freq) for srcname in lmn_dict
->>>>>>> ba93053 (Added new sources + new elevation and azimuth subtext in graph + new videoMaker script)
                 if srcname in sources]
 
     residual, _ = calibrate(vis, modelvis)

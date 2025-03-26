@@ -516,7 +516,6 @@ def make_sky_plot(image: np.ndarray, marked_bodies_lmn: Dict[str, Tuple[float, f
     fig.colorbar(cimg, cax=cax, orientation="vertical", format="%.2e")
 
     ax.set_xlim(1, -1)
-
     ax.set_xticks(np.arange(-1, 1.1, 0.5))
     ax.xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     ax.set_yticks(np.arange(-1, 1.1, 0.5))
