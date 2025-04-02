@@ -30,6 +30,8 @@ def main():
 
     print(f"SOutput directory: {output_dir}")
 
+    img_number = 0
+
     while True:
         dat_files = [f for f in os.listdir(input_dir) if f.endswith(".dat")]
         if not dat_files:
@@ -50,13 +52,13 @@ def main():
             last_size = 0
             start_time = time.time()
             timeout = 15  # Stop if no new data arrives for timeout seconds
-            frame_number = 0
 
             while time.time() - start_time < timeout:
-                print("testing")
+                # print("waiting for new data")
                 covariance_matrix, last_size = detect_new_data(dat_path, last_size)
                 if covariance_matrix is not None:
-                    image_data = process_data(covariance_matrix, subband, dat_path = dat_path, output_dir=output_dir)
+                    img_number += 1
+                    image_data = process_data(covariance_matrix, subband, dat_path = dat_path, output_dir=output_dir, frame=img_number)
                     start_time = time.time() 
                 time.sleep(1)
 

@@ -4,9 +4,9 @@ import os
 import datetime
 from lofarimaging.singlestationutil import get_station_type, rcus_in_station, make_xst_plots
 
-def process_data(covariance_matrix, subband, dat_path, output_dir, station_name="LV614", rcu_mode="3"):
+def process_data(covariance_matrix, subband, dat_path, output_dir, frame, station_name="LV614", rcu_mode="3"):
     obstime = get_obstime(dat_path)
-    make_xst_plots(covariance_matrix, station_name, obstime, subband, rcu_mode, outputpath=output_dir, sky_only=True)
+    make_xst_plots(covariance_matrix, station_name, obstime, subband, rcu_mode, outputpath=output_dir, sky_only=True, frame=frame)
 
 def get_obstime(dat_path):
     obsdatestr, obstimestr, *_ = os.path.basename(dat_path).rstrip(".dat").split("_")
