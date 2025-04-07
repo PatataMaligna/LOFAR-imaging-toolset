@@ -630,7 +630,6 @@ def make_xst_plots(xst_data: np.ndarray,
                    obstime: datetime.datetime,
                    subband: int,
                    rcu_mode: int,
-                   frame: int,
                    caltable_dir: str = "./test/CalTables",
                    extent: List[float] = None,
                    sources_file: str = None,
@@ -823,7 +822,7 @@ def make_xst_plots(xst_data: np.ndarray,
                   fig=sky_fig,
                   vmin=sky_vmin, vmax=sky_vmax)
 
-    sky_fig.savefig(os.path.join(outputpath, f'{fname}_sky_calibrated_{frame}.png'), bbox_inches='tight', dpi=200)
+    sky_fig.savefig(os.path.join(outputpath, f'{fname}_sky_calibrated_{freq / 1e6:.1f}_MHz.png'), bbox_inches='tight', dpi=200)
     plt.close(sky_fig)
 
     if sky_only:
