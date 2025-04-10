@@ -45,3 +45,15 @@ def get_subband_from_shell(shell_script):
     except Exception as e:
         print(f"Error reading {shell_script}: {e}")
     return None
+
+def get_rcu_mode(shell_script):
+    """Extract RCU mode from a shell script (.sh)."""
+    try:
+        with open(shell_script, "r") as file:
+            for line in file:
+                match = re.search(r"--rcumode=(\d)", line)
+                if match:
+                    return int(match.group(1))
+    except Exception as e:
+        print(f"Error reading {shell_script}: {e}")
+    return None

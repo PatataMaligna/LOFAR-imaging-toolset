@@ -527,7 +527,7 @@ def make_sky_plot(image: np.ndarray, marked_bodies_lmn: Dict[str, Tuple[float, f
 
     # ax.text(0.5, 1.05, title, fontsize=17, ha='center', va='bottom', transform=ax.transAxes)
     # ax.text(0.5, 1.02, subtitle, fontsize=12, ha='center', va='bottom', transform=ax.transAxes)
-    ax.set_title(f"{title}", fontsize=14, pad=200)
+    ax.set_title(f"{title}", fontsize=14, pad=250)
 
     # Ajustamos la posición con transform=ax.transAxes
     ax.text(
@@ -822,7 +822,7 @@ def make_xst_plots(xst_data: np.ndarray,
                   fig=sky_fig,
                   vmin=sky_vmin, vmax=sky_vmax)
 
-    sky_fig.savefig(os.path.join(outputpath, f'{fname}_sky_calibrated_{freq / 1e6:.1f}_MHz.png'), bbox_inches='tight', dpi=200)
+    sky_fig.savefig(os.path.join(outputpath, f'{fname}_sky_calibrated_{freq / 1e6:.1f}MHz.png'), bbox_inches='tight', dpi=200)
     plt.close(sky_fig)
 
     if sky_only:

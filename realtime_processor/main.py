@@ -3,7 +3,7 @@ import os
 import sys
 from datetime import datetime
 from realtime_processor.monitor import wait_for_dat_file, detect_new_data
-from realtime_processor.processor import process_data, get_obstime, get_subband, get_subband_from_shell
+from realtime_processor.processor import process_data, get_obstime, get_subband, get_subband_from_shell, get_rcu_mode
 
 def main():
     """Main loop to process real-time data and generate images."""
@@ -22,7 +22,11 @@ def main():
         if file.endswith(".sh"):
             shell_script = os.path.join(input_dir, file)
             break
-
+    if shell_script is None:
+        print("No shell script found in the input directory.")
+        sys.exit(1)
+    
+    rcu_mode = get_rcu_mode(shell_script)
     # Generate output folder name based on the current date
     today_date = datetime.today().strftime('%Y-%m-%d')
     output_dir = os.path.join(input_dir, f"{today_date}_realtime_observation")
@@ -80,10 +84,10 @@ def main():
                 covariance_matrix, last_size = detect_new_data(dat_path, last_size)
                 if covariance_matrix is not None:
                     if case_b and subband1 <= subband2:
-                        image_data = process_data(covariance_matrix, subband1, dat_path = dat_path, output_dir=output_dir)
+                        image_data = process_data(covariance_matrix, subband1, dat_path = dat_path, output_dir=output_dir, rcu_mode=rcu_mode)
                         subband1 += 1
                     if not case_b:
-                        image_data = process_data(covariance_matrix, subband, dat_path = dat_path, output_dir=output_dir)
+                        image_data = process_data(covariance_matrix, subband, dat_path = dat_path, output_dir=output_dir, rcu_mode=rcu_mode)
                     start_time = time.time() 
                 time.sleep(1)
 
