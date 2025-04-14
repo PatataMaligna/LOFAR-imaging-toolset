@@ -2,8 +2,19 @@ import time
 import os
 import sys
 from datetime import datetime
+from tqdm import tqdm
+from threading import Thread
+from PyQt5.QtWidgets import QApplication
 from realtime_processor.monitor import wait_for_dat_file, detect_new_data
 from realtime_processor.processor import process_data, get_obstime, get_subband, get_subband_from_shell, get_rcu_mode
+from realtime_processor.gui import RealTimeViewer
+
+def start_gui(output_dir):
+    """Start the GUI in a separate thread."""
+    app = QApplication(sys.argv)
+    viewer = RealTimeViewer(output_dir)
+    viewer.show()
+    sys.exit(app.exec_())
 
 def main():
     """Main loop to process real-time data and generate images."""
@@ -34,7 +45,11 @@ def main():
 
     print(f"Output directory: {output_dir}")
 
-    processed_files = {}  # Dictionary to track processed files and their last modification times
+    gui_thread = Thread(target=start_gui, args=(output_dir,))
+    gui_thread.daemon = True 
+    gui_thread.start()
+
+    processed_files = {}
     timeout = 15 
 
     while True:
@@ -62,12 +77,13 @@ def main():
         for dat_file in new_files:
             dat_path = os.path.join(input_dir, dat_file)
             header_file = dat_path.replace(".dat", ".h")
-
+            ##Checks if a .h equivalent to the .dat exists
             if os.path.exists(header_file):
                 subband = get_subband(header_file)
             else:
                 subband = get_subband_from_shell(shell_script)
 
+            ##Retrieve subband/s
             if isinstance(subband, tuple) and len(subband) == 2:
                 subband1, subband2 = subband
                 case_b = True
@@ -76,21 +92,35 @@ def main():
                 case_b = False
                 print(f"Processing {dat_file} | Subband: {subband}")
 
+            
+            ##Initialize variables
             last_size = 0
             start_time = time.time()
             timeout = 15  # Stop if no new data arrives for timeout seconds
+            file_size = os.path.getsize(dat_path)
+
+            pbar = tqdm(
+                total=file_size,
+                desc="Analyzing File",
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                dynamic_ncols=True,
+                mininterval=0.5  # more frequent updates
+            )
 
             while time.time() - start_time < timeout:
+                previous_last_size = last_size
                 covariance_matrix, last_size = detect_new_data(dat_path, last_size)
                 if covariance_matrix is not None:
                     if case_b and subband1 <= subband2:
-                        image_data = process_data(covariance_matrix, subband1, dat_path = dat_path, output_dir=output_dir, rcu_mode=rcu_mode)
+                        image_data = process_data(covariance_matrix, subband1, dat_path=dat_path, output_dir=output_dir, rcu_mode=rcu_mode)
                         subband1 += 1
                     if not case_b:
-                        image_data = process_data(covariance_matrix, subband, dat_path = dat_path, output_dir=output_dir, rcu_mode=rcu_mode)
-                    start_time = time.time() 
-                time.sleep(1)
-
+                        image_data = process_data(covariance_matrix, subband, dat_path=dat_path, output_dir=output_dir, rcu_mode=rcu_mode)
+                    pbar.update(last_size - previous_last_size)
+                    start_time = time.time()
+                # time.sleep(1)
 
         create_video(output_dir, os.path.join(output_dir, "output_video.mp4"))
 

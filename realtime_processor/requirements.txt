@@ -10,3 +10,4 @@ numpy==2.0.0
 opencv-python==4.10.0.84
 setuptools==70.1.0
 tqdm==4.67.1
+PyQt5==5.15.2

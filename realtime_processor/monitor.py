@@ -31,9 +31,10 @@ def detect_new_data(dat_file, last_size, num_rcu=192):
 
     current_size = os.path.getsize(dat_file)
 
+    total_size = current_size - last_size
+
     if current_size <= last_size:
         return None, last_size
-
     with open(dat_file, "rb") as f:
         f.seek(last_size)  
         chunk = None
@@ -41,8 +42,8 @@ def detect_new_data(dat_file, last_size, num_rcu=192):
             chunk = np.fromfile(f, dtype=np.complex128, count=num_rcu * num_rcu)
             chunk = chunk.reshape((num_rcu, num_rcu))
             last_size += matrix_size_bytes
-            print(f"Matrix size (bytes): {matrix_size_bytes}")
-            print(f"Current file size: {current_size}, Last read position: {last_size}")
+            # print(f"Matrix size (bytes): {matrix_size_bytes}")
+            # print(f"Current file size: {current_size}, Last read position: {last_size}")
         else:
             print("Warning: Incomplete chunk detected. Ignoring until next read.")
             return None, last_size
