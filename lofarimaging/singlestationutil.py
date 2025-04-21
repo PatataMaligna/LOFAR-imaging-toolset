@@ -525,14 +525,11 @@ def make_sky_plot(image: np.ndarray, marked_bodies_lmn: Dict[str, Tuple[float, f
     ax.set_xlabel('$ℓ$', fontsize=14)
     ax.set_ylabel('$m$', fontsize=14)
 
-    # ax.text(0.5, 1.05, title, fontsize=17, ha='center', va='bottom', transform=ax.transAxes)
-    # ax.text(0.5, 1.02, subtitle, fontsize=12, ha='center', va='bottom', transform=ax.transAxes)
     ax.set_title(f"{title}", fontsize=14, pad=250)
 
-    # Ajustamos la posición con transform=ax.transAxes
     ax.text(
-        0.5,       # x en coordenadas del eje (0 a 1)
-        1.02,      # un poco más arriba del 1.0 (límite del eje)
+        0.5,      
+        1.02,     
         subtitle,
         transform=ax.transAxes,
         ha='center',
@@ -796,12 +793,6 @@ def make_xst_plots(xst_data: np.ndarray,
     sky_img = sky_imager(visibilities_stokes_i, baselines, freq, npix_l, npix_m)
 
     marked_bodies_lmn_only3 = {k: v for (k, v) in marked_bodies_lmn.items() if k in ('Cas A', 'Cyg A', 'Sun')}
-
-    # altaz_frame = AltAz(location=station_earthlocation, obstime=obstime_astropy)
-    # cas_a_altaz = marked_bodies['Cas A'].transform_to(altaz_frame)
-
-    # cas_a_el = cas_a_altaz.alt.deg
-    # cas_a_az = cas_a_altaz.az.deg
 
     # Plot the resulting sky image
     sky_fig = plt.figure(figsize=(10, 10))
