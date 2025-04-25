@@ -53,7 +53,7 @@ def get_rcu_mode(shell_script):
             for line in file:
                 match = re.search(r"--rcumode=(\d)", line)
                 if match:
-                    return int(match.group(1))
+                    return match.group(1)
     except Exception as e:
         print(f"Error reading {shell_script}: {e}")
     return None
