@@ -24,6 +24,7 @@ class Plot(FigureCanvas):
         self.circle = Circle((0, 0), 1.0, edgecolor='k', fill=False, facecolor='none', alpha=0.3)
         self.ax.add_artist(self.circle)
         self._setup_axes()
+        self.marker_sources = []
 
     def _setup_axes(self):
         self.ax.set_xlim(1, -1)
@@ -40,13 +41,18 @@ class Plot(FigureCanvas):
         self.ax.text(0, -0.9, 'S', ha='center', va='center', color='w', fontsize=17)
         self.fig.tight_layout(rect=[0, 0, 1, 0.95])
 
-    def plot_matrix(self, xst_data, subband = None, rcu_mode = "3", title = None, **kwargs):
+    def plot_matrix(self,
+    xst_data,
+    dat_path,
+    subband = None,
+    rcu_mode = "3",
+    title = None,
+    **kwargs):
         config = configparser.ConfigParser()
         config.read("sources.ini")
         station_name = "LV614"
         caltable_dir: str = "./test/CalTables/LV614"
         npix_l, npix_m = 131, 131
-        dat_path = "20241207_180018_xst-003"
         obsdatestr, obstimestr, *_ = os.path.basename(dat_path).rstrip(".dat").split("_")
         obstime = datetime.datetime.strptime(obsdatestr + ":" + obstimestr, '%Y%m%d:%H%M%S')
 
@@ -142,6 +148,9 @@ class Plot(FigureCanvas):
         # self.ax.set_title("") 
         for text in self.ax.texts:
             text.remove()
+        for artist in getattr(self, "marker_sources", []):
+            artist.remove()
+        self.marker_sources = []
 
         self.ax.set_title(f"Sky image for {station_name}", fontsize=14, pad=250)
         self.ax.text(0.5, 1.02, subtitle_text, transform=self.ax.transAxes,
@@ -150,7 +159,8 @@ class Plot(FigureCanvas):
         if marked_bodies_lmn:
             for body_name, data in marked_bodies_lmn.items():
                 lmn = data['lmn']
-                self.ax.plot([lmn[0]], [lmn[1]], marker='x', color='black', mew=0.5)
+                marker, = self.ax.plot([lmn[0]], [lmn[1]], marker='x', color='black', mew=0.5)
+                self.marker_sources.append(marker)
                 self.ax.annotate(body_name, (lmn[0], lmn[1]))
 
         self.draw()
