@@ -1,7 +1,7 @@
 import os
 import time
 from tqdm import tqdm
-from PyQt5.QtCore import QObject, pyqtSignal, QCoreApplication
+from PyQt6.QtCore import QObject, pyqtSignal, QCoreApplication
 from realtime_processor.monitor import detect_new_data
 from realtime_processor.processor import process_data, get_subband, get_subband_from_shell, get_rcu_mode
 from lofarimaging import sb_from_freq
@@ -94,7 +94,6 @@ class DataProcessorWorker(QObject):
                             print(f"Subband from frequency: {subband}")
                             self.update_signal.emit(covariance_matrix, dat_path, subband, rcu_mode)
                         elif case_b and subband1 <= subband2:
-                            print("KALSDJFLKSADF", self.selected_frequency)
                             self.update_signal.emit(covariance_matrix, dat_path, subband1, rcu_mode)
                             subband1 += 1
                         elif not case_b:

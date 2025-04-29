@@ -63,7 +63,6 @@ class Plot(FigureCanvas):
         assert xst_data.ndim == 2, "xst_data must be a 2D array"
 
         freq = freq_from_sb(subband, rcu_mode)
-        print("Current subband:", subband)
         visibilities, calibration_info = apply_calibration(xst_data, station_name, rcu_mode, subband,
                                                        caltable_dir=caltable_dir)
         db = LofarAntennaDatabase()

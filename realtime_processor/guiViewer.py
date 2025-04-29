@@ -1,8 +1,8 @@
 import sys
 import os
-from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import QTimer
+from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtCore import QTimer
 
 class RealTimeViewer(QWidget):
     def __init__(self, image_folder):

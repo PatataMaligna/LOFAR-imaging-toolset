@@ -1,8 +1,8 @@
 import sys
 import os
 from datetime import datetime
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QThread
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtCore import QThread
 from realtime_processor.mainWindow import MainWindow
 from realtime_processor.worker import DataProcessorWorker
 def main():
@@ -33,7 +33,7 @@ def main():
     
     
     thread.started.connect(worker.run)
-    
+
     window.frequency_signal.connect(worker.on_frequency_update)
     worker.update_signal.connect(window.update_plot)
     window.plot_ready.connect(worker.on_plot_ready)
@@ -43,7 +43,7 @@ def main():
 
     thread.start()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 if __name__ == "__main__":
     main()

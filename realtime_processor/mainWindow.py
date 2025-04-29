@@ -1,9 +1,9 @@
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton
 )
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal
 from realtime_processor.plot import Plot
 from datetime import datetime
 from threading import Lock
@@ -59,8 +59,11 @@ class MainWindow(QMainWindow):
     def submit_frequency(self):
         """Submit the frequency input."""
         try:
-            freq = self.frequency_input.text()
-            self.selected_frequency = freq
-            self.frequency_signal.emit(freq)
+            freq = float(self.frequency_input.text())
+            if 10 <= freq <= 99:
+                self.selected_frequency = str(freq)
+                self.frequency_signal.emit(str(freq))
+            else:
+                print("Frequency must be between 10 and 99 MHz.")
         except ValueError:
             print("Invalid frequency input.")
