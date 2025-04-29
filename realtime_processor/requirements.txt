@@ -3,7 +3,6 @@ attrs==25.1.0
 h5py==3.13.0
 lofarantpos==0.7.1
 lofargeotiff==0.1
-lofarimaging
 matplotlib==3.10.1
 numba==0.61.0
 numpy==2.0.0
@@ -11,3 +10,6 @@ opencv-python==4.10.0.84
 setuptools==70.1.0
 tqdm==4.67.1
 PyQt5==5.15.2
+numexpr==2.10.2
+folium==0.19.4
+OWSLib==0.32.1

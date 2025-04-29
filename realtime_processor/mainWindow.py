@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         outer_layout = QHBoxLayout(self.central_widget)
 
         control_layout = QVBoxLayout()
-        self.frequency_label = QLabel("Enter Frequency (Hz):")
+        self.frequency_label = QLabel("Enter Frequency (10 - 99) MHz:")
         control_layout.addWidget(self.frequency_label)
 
         self.frequency_input = QLineEdit()
@@ -60,8 +60,7 @@ class MainWindow(QMainWindow):
         """Submit the frequency input."""
         try:
             freq = self.frequency_input.text()
-            with self.freq_lock:
-                self.selected_frequency = freq
+            self.selected_frequency = freq
             self.frequency_signal.emit(freq)
         except ValueError:
             print("Invalid frequency input.")

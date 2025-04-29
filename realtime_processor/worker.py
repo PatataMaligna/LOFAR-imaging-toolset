@@ -4,20 +4,25 @@ from tqdm import tqdm
 from PyQt5.QtCore import QObject, pyqtSignal, QCoreApplication
 from realtime_processor.monitor import detect_new_data
 from realtime_processor.processor import process_data, get_subband, get_subband_from_shell, get_rcu_mode
-
+from lofarimaging import sb_from_freq
 
 class DataProcessorWorker(QObject):
     update_signal = pyqtSignal(object, str, int, str)
     finished = pyqtSignal()
-
+    frequency_signal = pyqtSignal(str)
     def __init__(self, input_dir, output_dir):
         super().__init__()
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.waiting_for_plot = True
+        self.selected_frequency = None
 
     def on_plot_ready(self):
         self.waiting_for_plot = False
+
+    def on_frequency_update(self, freq):
+        print(f"Frequency updated to: {freq}")
+        self.selected_frequency = freq
 
     def run(self):
         shell_script = None
@@ -82,7 +87,14 @@ class DataProcessorWorker(QObject):
                     covariance_matrix, last_size = detect_new_data(dat_path, last_size)
                     if covariance_matrix is not None:
                         self.waiting_for_plot = True
-                        if case_b and subband1 <= subband2:
+                    
+                        if self.selected_frequency is not None:
+                            print(f"Selected frequency: {self.selected_frequency}")
+                            subband = sb_from_freq(float(self.selected_frequency) * 1e6, rcu_mode)
+                            print(f"Subband from frequency: {subband}")
+                            self.update_signal.emit(covariance_matrix, dat_path, subband, rcu_mode)
+                        elif case_b and subband1 <= subband2:
+                            print("KALSDJFLKSADF", self.selected_frequency)
                             self.update_signal.emit(covariance_matrix, dat_path, subband1, rcu_mode)
                             subband1 += 1
                         elif not case_b:

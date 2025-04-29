@@ -31,7 +31,10 @@ def main():
     worker = DataProcessorWorker(input_dir, output_dir)
     worker.moveToThread(thread)
     
+    
     thread.started.connect(worker.run)
+    
+    window.frequency_signal.connect(worker.on_frequency_update)
     worker.update_signal.connect(window.update_plot)
     window.plot_ready.connect(worker.on_plot_ready)
     worker.finished.connect(thread.quit)

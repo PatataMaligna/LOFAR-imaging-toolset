@@ -47,20 +47,21 @@ class Plot(FigureCanvas):
     subband = None,
     rcu_mode = "3",
     title = None,
+    caltable_dir: str = "./test/CalTables/LV614",
+    configSourcersFile = "sources.ini",
+    station_name = "LV614",
+    npix_l = 130,
+    npix_m = 130,
     **kwargs):
+    
         config = configparser.ConfigParser()
-        config.read("sources.ini")
-        station_name = "LV614"
-        caltable_dir: str = "./test/CalTables/LV614"
-        npix_l, npix_m = 131, 131
+        config.read(configSourcersFile)
+        
         obsdatestr, obstimestr, *_ = os.path.basename(dat_path).rstrip(".dat").split("_")
         obstime = datetime.datetime.strptime(obsdatestr + ":" + obstimestr, '%Y%m%d:%H%M%S')
 
-        assert xst_data.ndim == 2, "xst_datafrequency_in_str must be a 2D array"
-        ##Check if we have a subband of a frequency input
-        if subband is None:
-            subband = sb_from_freq(float(frequency_in_str) * 1e6, rcu_mode)
-        # elif frequency_in_str is None:
+        assert xst_data.ndim == 2, "xst_data must be a 2D array"
+
         freq = freq_from_sb(subband, rcu_mode)
         print("Current subband:", subband)
         visibilities, calibration_info = apply_calibration(xst_data, station_name, rcu_mode, subband,
