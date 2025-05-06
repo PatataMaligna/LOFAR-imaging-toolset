@@ -6,7 +6,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.axes as maxes
 import numpy as np
 import os
-import datetime
+from datetime import datetime
 
 import astropy.units as u
 from lofarimaging import apply_calibration, sky_imager, get_station_xyz, skycoord_to_lmn, get_full_station_name, sb_from_freq, freq_from_sb
@@ -58,7 +58,7 @@ class Plot(FigureCanvas):
         config.read(configSourcersFile)
         
         obsdatestr, obstimestr, *_ = os.path.basename(dat_path).rstrip(".dat").split("_")
-        obstime = datetime.datetime.strptime(obsdatestr + ":" + obstimestr, '%Y%m%d:%H%M%S')
+        obstime = datetime.strptime(obsdatestr + ":" + obstimestr, '%Y%m%d:%H%M%S')
 
         assert xst_data.ndim == 2, "xst_data must be a 2D array"
 
@@ -164,3 +164,7 @@ class Plot(FigureCanvas):
                 self.ax.annotate(body_name, (lmn[0], lmn[1]))
 
         self.draw()
+        fname = f"{obstime:%Y%m%d}_{obstime:%H%M%S}_{station_name}_SB{subband}"
+        today_date = datetime.today().strftime('%Y-%m-%d')
+        output_dir = os.path.join(os.path.dirname(dat_path), f"{today_date}_realtime_observation")
+        # self.fig.savefig(os.path.join(output_dir, f'{fname}_sky_calibrated_{freq / 1e6:.1f}MHz.png'), bbox_inches='tight', dpi=200)

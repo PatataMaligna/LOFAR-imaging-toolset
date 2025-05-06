@@ -13,3 +13,4 @@ PyQt6==6.9.0
 numexpr==2.10.2
 folium==0.19.4
 OWSLib==0.32.1
+six==1.17.0

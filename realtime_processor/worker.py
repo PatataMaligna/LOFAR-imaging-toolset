@@ -97,12 +97,11 @@ class DataProcessorWorker(QObject):
                             self.update_signal.emit(covariance_matrix, dat_path, subband1, rcu_mode)
                             subband1 += 1
                         elif not case_b:
-                            # process_data(covariance_matrix, subband, dat_path=dat_path, output_dir=self.output_dir, rcu_mode=rcu_mode)
                             self.update_signal.emit(covariance_matrix, dat_path, subband, rcu_mode)
 
                         while self.waiting_for_plot:
                             QCoreApplication.processEvents()                            
-                            time.sleep(1)
+                            # time.sleep(1)
 
                         pbar.update(last_size - prev_size)
                         start_time = time.time()
