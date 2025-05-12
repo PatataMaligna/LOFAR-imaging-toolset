@@ -101,10 +101,10 @@ class DataProcessorWorker(QObject):
 
                         while self.waiting_for_plot:
                             QCoreApplication.processEvents()                            
-                            # time.sleep(1)
+                            time.sleep(1)
 
                         pbar.update(last_size - prev_size)
                         start_time = time.time()
 
-        create_video(self.output_dir, os.path.join(self.output_dir, "output_video.mp4"))
+        # create_video(self.output_dir, os.path.join(self.output_dir, "output_video.mp4"))
         self.finished.emit()

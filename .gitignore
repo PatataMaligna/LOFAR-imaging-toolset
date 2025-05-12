@@ -5,11 +5,8 @@ videoResults/
 .vscode/
 movies/
 imgSameSubband/*
+jupyters/
 collect_from_opcua.py
-hdf5_tools.ipynb
-image_opcua.ipynb
-lofarimaging.ipynb
-viewer.ipynb
 
 results/*
 CalTables/*
