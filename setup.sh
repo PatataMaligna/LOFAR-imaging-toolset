@@ -7,10 +7,6 @@ echo "Creating virtual environment..."
 python3 -m venv envLofar
 source envLofar/bin/activate
 
-echo "Installing system dependencies..."
-sudo apt update
-sudo apt install -y libgl1 libglib2.0-0
-
 echo "Installing Python dependencies..."
 pip install --upgrade pip
 pip install git+https://github.com/lofar-astron/lofarimaging.git

@@ -5,6 +5,7 @@ from PyQt6.QtCore import QObject, pyqtSignal, QCoreApplication
 from realtime_processor.monitor import detect_new_data
 from realtime_processor.processor import process_data, get_subband, get_subband_from_shell, get_rcu_mode
 from lofarimaging import sb_from_freq
+from realtime_processor.video import create_video
 
 class DataProcessorWorker(QObject):
     update_signal = pyqtSignal(object, str, int, str)
@@ -106,5 +107,5 @@ class DataProcessorWorker(QObject):
                         pbar.update(last_size - prev_size)
                         start_time = time.time()
 
-        # create_video(self.output_dir, os.path.join(self.output_dir, "output_video.mp4"))
+        create_video(self.output_dir, os.path.join(self.output_dir, f"generated_video.mp4"))
         self.finished.emit()

@@ -39,7 +39,8 @@ def main():
     worker.finished.connect(thread.quit)
     worker.finished.connect(worker.deleteLater)
     thread.finished.connect(thread.deleteLater)
-
+    worker.finished.connect(app.quit)
+    
     thread.start()
 
     sys.exit(app.exec())
