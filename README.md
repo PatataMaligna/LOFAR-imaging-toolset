@@ -52,5 +52,8 @@ python3 -m realtime_processor.main /your/data/path
 ```
 
 ## 📄 License
+This project is licensed under the Apache License, Version 2.0.  
+See the [LICENSE](./LICENSE) file for full license text.
 
-MIT © LOFAR Astron
+Original work © ASTRON and contributors.  
+Modifications © 2025 Jorge Cuello.

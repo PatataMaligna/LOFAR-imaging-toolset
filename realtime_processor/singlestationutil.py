@@ -1,3 +1,9 @@
+# This file was modified by Jorge Cuello (25/03/2025 – 30/05/2025)
+# Based on original code from: https://github.com/lofar-astron/lofarimaging
+# Licensed under the Apache License, Version 2.0
+
+
+
 """Functions for working with LOFAR single station data"""
 
 import os
@@ -24,19 +30,17 @@ from astropy.coordinates import SkyCoord, GCRS, EarthLocation, AltAz, get_sun, g
 import astropy.units as u
 from astropy.time import Time
 
-import lofargeotiff
 from lofarantpos.db import LofarAntennaDatabase
 import lofarantpos
 
-from .maputil import get_map, make_leaflet_map
-from .lofarimaging import nearfield_imager, sky_imager, skycoord_to_lmn, subtract_sources
+from .lofarimaging import sky_imager, skycoord_to_lmn, subtract_sources
 from .hdf5util import write_hdf5
 
 
 __all__ = ["sb_from_freq", "freq_from_sb", "find_caltable", "read_caltable",
            "rcus_in_station", "read_acm_cube", "get_station_pqr", "get_station_xyz", "get_station_type",
-           "make_sky_plot", "make_ground_plot", "make_xst_plots", "apply_calibration",
-           "get_full_station_name", "get_extent_lonlat", "make_sky_movie", "reimage_sky"]
+           "make_sky_plot", "make_xst_plots", "apply_calibration",
+           "get_full_station_name", "make_sky_movie", "reimage_sky"]
 
 __version__ = "1.5.0"
 

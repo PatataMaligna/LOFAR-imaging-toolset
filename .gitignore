@@ -6,7 +6,6 @@ videoResults/
 movies/
 imgSameSubband/*
 jupyters/
-collect_from_opcua.py
 
 results/*
 CalTables/*

@@ -1,3 +1,8 @@
+# This file was modified by Jorge Cuello (25/03/2025 – 30/05/2025)
+# Based on original code from: https://github.com/lofar-astron/lofarimaging
+# Licensed under the Apache License, Version 2.0
+
+
 """ Functions for working with single station data stored in HDF5
 
 The HDF5 format used is the following:
@@ -10,11 +15,9 @@ obs000001          A group per observation (numbering is arbitrary)
                    Same ordering as xst_data
   sky_img          Sky image data as matrix of real numbers
   ground_imgs      Group for ground images
-<<<<<<< HEAD
     ground_img000  Ground image as matrix of real numbers
 =======
   ground_img000  Ground image as matrix of real numbers
->>>>>>> ba93053 (Added new sources + new elevation and azimuth subtext in graph + new videoMaker script)
 
 Per observation, the following attributes are used:
  * frequency       Frequency in Hz

@@ -2,7 +2,7 @@ import numpy as np
 import re
 import os
 import datetime
-from lofarimaging.singlestationutil import get_station_type, rcus_in_station, make_xst_plots
+from realtime_processor.singlestationutil import get_station_type, rcus_in_station, make_xst_plots
 
 def process_data(covariance_matrix, subband, dat_path, output_dir, station_name="LV614", rcu_mode="3"):
     obstime = get_obstime(dat_path)
