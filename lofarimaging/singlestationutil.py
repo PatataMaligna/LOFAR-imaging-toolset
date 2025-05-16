@@ -403,83 +403,6 @@ def get_station_xyz(station_name: str, rcu_mode: Union[str, int], db):
 
     return station_xyz, pqr_to_xyz
 
-
-def make_ground_plot(image: np.ndarray, background_map: np.ndarray, extent: List[float], title: str = "Ground plot",
-        subtitle: str = "", opacity: float = 0.6, fig: Figure = None, draw_contours: bool = True, **kwargs) \
-        -> Tuple[Figure, np.ndarray]:
-    """
-    Make a ground plot of an array with data
-
-    Args:
-        image: numpy array (two dimensions with data)
-        background_map: background map
-        extent: extent in metres
-        title: Title for the plot
-        subtitle: Subtitle for the plot
-        opacity: maximum opacity of the plot
-        fig: exisiting figure object to be reused
-        draw_contours: draw contours. Defaults to True
-        **kwargs: other options to be passed to plt.imshow (e.g. vmin)
-
-    Returns:
-        Updated figure and numpy array with only the plot
-
-    Example:
-        >>> dummy_image = np.random.rand(150, 150)
-        >>> fig, plot_array = make_ground_plot(dummy_image, dummy_image, [-300, 300, -100, 100])
-        >>> plot_array.shape
-        (150, 150, 4)
-    """
-    if fig is None:
-        fig = plt.figure(figsize=(10, 10))
-
-    # Make colors semi-transparent in the lower 3/4 of the scale
-    cmap = cm.Spectral_r
-    cmap_with_alpha = cmap(np.arange(cmap.N))
-    cmap_with_alpha[:, -1] = np.clip(np.linspace(0, 1.5, cmap.N), 0., 1.)
-    cmap_with_alpha = ListedColormap(cmap_with_alpha)
-
-    # Plot the resulting image
-    ax = fig.add_subplot(111, ymargin=-0.4)
-    ax.imshow(background_map, extent=extent)
-    cimg = ax.imshow(image, origin='lower', cmap=cmap_with_alpha, extent=extent,
-                     alpha=opacity, **kwargs)
-
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.2, axes_class=maxes.Axes)
-    cbar = fig.colorbar(cimg, cax=cax, orientation="vertical", format="%.2e")
-    cbar.solids.set(alpha=1.0)
-    # cbar.set_ticks([])
-
-    ax.set_xlabel('$W-E$ (metres)', fontsize=14)
-    ax.set_ylabel('$S-N$ (metres)', fontsize=14)
-
-    ax.text(0.5, 1.05, title, fontsize=17, ha='center', va='bottom', transform=ax.transAxes)
-    ax.text(0.5, 1.02, subtitle, fontsize=12, ha='center', va='bottom', transform=ax.transAxes)
-
-    # Change limits to match the original specified extent in the localnorth frame
-    ax.set_xlim(extent[0], extent[1])
-    ax.set_ylim(extent[2], extent[3])
-    ax.tick_params(axis='both', which='both', length=0)
-
-    # Place the NSEW coordinate directions
-    ax.text(0.95, 0.5, 'E', color='w', fontsize=18, transform=ax.transAxes, ha='center', va='center')
-    ax.text(0.05, 0.5, 'W', color='w', fontsize=18, transform=ax.transAxes, ha='center', va='center')
-    ax.text(0.5, 0.95, 'N', color='w', fontsize=18, transform=ax.transAxes, ha='center', va='center')
-    ax.text(0.5, 0.05, 'S', color='w', fontsize=18, transform=ax.transAxes, ha='center', va='center')
-
-    ground_vmin_img, ground_vmax_img = cimg.get_clim()
-    if draw_contours:
-        ax.contour(image, np.linspace(ground_vmin_img, ground_vmax_img, 15), origin='lower', cmap=cm.Greys,
-                   extent=extent, linewidths=0.5, alpha=opacity)
-    ax.grid(True, alpha=0.3)
-
-    vmin, vmax = cimg.get_clim()
-    raw_plotdata = cmap_with_alpha(Normalize(vmin=vmin, vmax=vmax)(image))[::-1, :]
-
-    return fig, raw_plotdata
-
-
 def make_sky_plot(image: np.ndarray, marked_bodies_lmn: Dict[str, Tuple[float, float, float]],
                   title: str = "Sky plot", subtitle: str = "", fig: Figure = None,
                   label: str = None, **kwargs) -> Figure:
@@ -592,35 +515,6 @@ def get_full_station_name(station_name: str, rcu_mode: Union[str, int]) -> str:
         raise Exception("Unexpected rcu_mode: ", rcu_mode)
 
     return station_name
-
-
-def get_extent_lonlat(extent_m: List[int],
-                      full_station_name: str,
-                      db: lofarantpos.db.LofarAntennaDatabase) -> Tuple[float]:
-    """
-    Get extent in longintude, latitude
-
-    Args:
-        extent_m (List[int]): Extent in metres, in the station frame
-        full_station_name (str): Station name (full, so with LBA or HBA)
-        db (lofarantpos.db.LofarAntennaDatabase): Antenna database instance
-
-    Returns:
-        Tuple[float]: (lon_min, lon_max, lat_min, lat_max)
-    """
-    rotation = db.rotation_from_north(full_station_name)
-
-    pqr_to_xyz = np.array([[np.cos(-rotation), -np.sin(-rotation), 0],
-                           [np.sin(-rotation), np.cos(-rotation), 0],
-                           [0, 0, 1]])
-
-    pmin, qmin, _ = pqr_to_xyz.T @ (np.array([extent_m[0], extent_m[2], 0]))
-    pmax, qmax, _ = pqr_to_xyz.T @ (np.array([extent_m[1], extent_m[3], 0]))
-    lon_min, lat_min, _ = lofargeotiff.pqr_to_longlatheight([pmin, qmin, 0], full_station_name)
-    lon_max, lat_max, _ = lofargeotiff.pqr_to_longlatheight([pmax, qmax, 0], full_station_name)
-
-    return [lon_min, lon_max, lat_min, lat_max]
-
 
 def make_xst_plots(xst_data: np.ndarray,
                    station_name: str,
@@ -755,22 +649,17 @@ def make_xst_plots(xst_data: np.ndarray,
         'Moon': get_body('moon', time=obstime_astropy),
         'Sun': get_sun(time=obstime_astropy).transform_to(gcrs_instance),
         '3C196': SkyCoord(ra=float(config['3C196']['RA']) * u.deg, dec=float(config['3C196']['DEC']) * u.deg),
-        # SkyCoord("23 23 26.0 +58 48 41", unit=(u.hourangle, u.deg))
-        # 'J0133-3629': [1.0440, -0.662, -0.225],
         '3C48': SkyCoord(config['3C48']['ICRS_coord'], unit=(u.hourangle, u.deg)),
         'For A': SkyCoord(config['For A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
         '3C123': SkyCoord(config['3C123']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-        # 'J0444-2809': [0.9710, -0.894, -0.118],
         '3C138': SkyCoord(config['3C138']['ICRS_coord'], unit=(u.hourangle, u.deg)),
         'Pic A': SkyCoord(config['Pic A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
         'Tau A': SkyCoord(config['Tau A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
         '3C147': SkyCoord(config['3C147']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-        # 'Hyd A': [1.7795, -0.9176, -0.084, -0.0139, 0.030],
         '3C286': SkyCoord(config['3C286']['ICRS_coord'], unit=(u.hourangle, u.deg)),
         '3C353': SkyCoord(config['3C353']['ICRS_coord'], unit=(u.hourangle, u.deg)),
         '3C380': SkyCoord(config['3C380']['ICRS_coord'], unit=(u.hourangle, u.deg)),
         '3C444': SkyCoord(config['3C444']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-        # 'casa': [3.3584, -0.7518, -0.035, -0.071]
     }
 
     if subtract_sources is not None:
@@ -819,66 +708,10 @@ def make_xst_plots(xst_data: np.ndarray,
     if sky_only:
         return sky_fig
 
-    npix_x, npix_y = int(ground_resolution * (extent[1] - extent[0])), int(ground_resolution * (extent[3] - extent[2]))
+    write_hdf5(hdf5_filename, xst_data, visibilities, sky_img, ground_img=None, station_name=station_name, subband=subband, rcu_mode=rcu_mode,
+               frequency=freq, obstime=obstime, extent=extent, extent_lonlat=None, height=height, bodies_lmn=marked_bodies_lmn, calibration_info=calibration_info, subtracted=subtract)
 
-    os.environ["NUMEXPR_NUM_THREADS"] = "3"
-
-    # Select a subset of visibilities, only the lower triangular part
-    baseline_indices = np.tril_indices(visibilities_stokes_i.shape[0])
-
-    visibilities_selection = visibilities_stokes_i[baseline_indices]
-
-    ground_img = nearfield_imager(visibilities_selection.flatten()[:, np.newaxis],
-                                  np.array(baseline_indices).T,
-                                  [freq], npix_x, npix_y, extent, station_xyz, height=height)
-
-    # Correct for taking only lower triangular part
-    ground_img = np.real(2 * ground_img)
-
-    # Convert bottom left and upper right to PQR just for lofargeo
-    lon_center, lat_center, _ = lofargeotiff.pqr_to_longlatheight([0, 0, 0], station_name)
-
-    extent_lonlat = get_extent_lonlat(extent, station_name, db)
-
-    background_map = get_map(*extent_lonlat, zoom=map_zoom)
-
-    ground_fig, folium_overlay = make_ground_plot(ground_img, background_map, extent,
-                                                  title=f"Near field image for {station_name}",
-                                                  subtitle=f"SB {subband} ({freq / 1e6:.1f} MHz), {str(obstime)[:16]}",
-                                                  opacity=opacity, vmin=ground_vmin, vmax=ground_vmax)
-
-    ground_fig.savefig(os.path.join(outputpath, f"{fname}_nearfield_calibrated.png"), bbox_inches='tight', dpi=200)
-    plt.close(ground_fig)
-
-    maxpixel_ypix, maxpixel_xpix = np.unravel_index(np.argmax(ground_img), ground_img.shape)
-    maxpixel_x = np.interp(maxpixel_xpix, [0, npix_x], [extent[0], extent[1]])
-    maxpixel_y = np.interp(maxpixel_ypix, [0, npix_y], [extent[2], extent[3]])
-    [maxpixel_p, maxpixel_q, _] = pqr_to_xyz.T @ np.array([maxpixel_x, maxpixel_y, height])
-    maxpixel_lon, maxpixel_lat, _ = lofargeotiff.pqr_to_longlatheight([maxpixel_p, maxpixel_q], station_name)
-
-    # Show location of maximum
-    print(f"Maximum at {maxpixel_x:.0f}m east, {maxpixel_y:.0f}m north of station center " +
-          f"(lat/long {maxpixel_lat:.5f}, {maxpixel_lon:.5f})")
-
-    tags = {"generated_with": f"lofarimaging v{__version__}",
-            "subband": subband,
-            "frequency": freq,
-            "extent_xyz": extent,
-            "height": height,
-            "station": station_name,
-            "pixels_per_metre": pixels_per_metre}
-    tags.update(calibration_info)
-    lon_min, lon_max, lat_min, lat_max = extent_lonlat
-    lofargeotiff.write_geotiff(ground_img[::-1,:], os.path.join(outputpath, f"{fname}_nearfield_calibrated.tiff"),
-                               (lon_min, lat_max), (lon_max, lat_min), as_pqr=False,
-                               stationname=station_name, obsdate=obstime, tags=tags)
-
-    leaflet_map = make_leaflet_map(folium_overlay, lon_center, lat_center, lon_min, lat_min, lon_max, lat_max)
-
-    write_hdf5(hdf5_filename, xst_data, visibilities, sky_img, ground_img, station_name, subband, rcu_mode,
-               freq, obstime, extent, extent_lonlat, height, marked_bodies_lmn, calibration_info, subtract)
-
-    return sky_fig, ground_fig, leaflet_map
+    return sky_fig
 
 
 def make_sky_movie(moviefilename: str, h5file: h5py.File, obsnums: List[str], vmin=None, vmax=None,
@@ -976,64 +809,3 @@ def reimage_sky(h5: h5py.File, obsnum: str, db: lofarantpos.db.LofarAntennaDatab
                             vmin=vmin, vmax=vmax)
 
     return sky_fig
-
-
-def reimage_nearfield(h5: h5py.File, obsnum: str, db: lofarantpos.db.LofarAntennaDatabase, extent: List[float] = None,
-                      subtract: bool = None):
-    """
-    Reimage nearfield for ground image
-
-    Args:
-        h5 (h5py.File): HDF5 file
-        obsnum (str): observation number
-        db (lofarantpos.db.LofarAntennaDatabase): instance of lofar antenna database
-        extent (List[float], optional): Imaging extent in metres
-        subtract (List[str], optional): List of sources to subtract, e.g. ["Cas A", "Sun"]
-
-    Returns:
-        fig, leaflet map
-
-    Example:
-        >>> from lofarantpos.db import LofarAntennaDatabase
-        >>> db = LofarAntennaDatabase()
-        >>> fig = reimage_nearfield(h5py.File("test/test.h5", "r"), "obs000002", db, extent=[-500, 500, -500, 500], \
-                                    subtract=["Cas A"])
-    """
-    station_name = h5[obsnum].attrs['station_name']
-    subband = h5[obsnum].attrs['subband']
-    obstime = h5[obsnum].attrs['obstime']
-    rcu_mode = h5[obsnum].attrs['rcu_mode']
-    freq = h5[obsnum].attrs['frequency']
-    marked_bodies_lmn = dict(zip(h5[obsnum].attrs["source_names"], h5[obsnum].attrs["source_lmn"]))
-    visibilities = h5[obsnum]['calibrated_data'][:]
-    visibilities_xx = visibilities[0::2, 0::2]
-    visibilities_yy = visibilities[1::2, 1::2]
-    # Stokes I
-    visibilities_stokes_i = visibilities_xx + visibilities_yy
-
-    if subtract is not None:
-        station_xyz, _ = get_station_xyz(station_name, rcu_mode, db)
-        baselines = station_xyz[:, np.newaxis, :] - station_xyz[np.newaxis, :, :]
-        visibilities_stokes_i = subtract_sources(visibilities_stokes_i, baselines, freq, marked_bodies_lmn, subtract)
-
-    baseline_indices = np.tril_indices(visibilities_stokes_i.shape[0])
-    visibilities_selection = visibilities_stokes_i[baseline_indices]
-
-    extent_lonlat = get_extent_lonlat(extent, get_full_station_name(station_name, h5[obsnum].attrs['rcu_mode']), db)
-
-    background_map = get_map(*extent_lonlat, 14)
-
-    ground_img = nearfield_imager(visibilities_selection.flatten()[:, np.newaxis],
-                                  np.array(baseline_indices).T, [freq],
-                                  600, 600, extent,
-                                  get_station_pqr(h5[obsnum].attrs["station_name"], h5[obsnum].attrs["rcu_mode"], db))
-    ground_img = np.real(2 * ground_img)
-
-    fig, folium_overlay = make_ground_plot(ground_img, background_map, extent, draw_contours=False, opacity=0.3,
-                                           title=f"Near field image for {station_name}",
-                                           subtitle=f"SB {subband} ({freq / 1e6:.1f} MHz), {str(obstime)[:16]}",)
-
-    leaflet_map = make_leaflet_map(folium_overlay, *(extent_lonlat[1:3]),
-                                   extent_lonlat[0], extent_lonlat[2], extent_lonlat[1], extent_lonlat[3])
-
-    return fig, leaflet_map
