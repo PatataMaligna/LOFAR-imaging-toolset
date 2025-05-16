@@ -9,10 +9,17 @@ setup(
     url="https://github.com/PatataMaligna/LOFAR-imaging-toolset",
     packages=find_packages(),
     install_requires=[
-        "numpy",
-        "matplotlib",
-        "astropy",
-        "packaging"
+        "numpy>=2.0.0",
+        "matplotlib>=3.10.3",
+        "astropy>=7.0.1",
+        "packaging>=24.1",
+        "h5py>=3.13.0",
+        "lofarantpos>=0.7.1",
+        "numba>=0.61.0",
+        "numexpr>=2.10.2",
+        "opencv-python>=4.10.0.84",
+        "PyQt6>=6.9.0",
+        "tqdm>=4.67.1",
     ],
     entry_points={
         "console_scripts": [
@@ -21,8 +28,9 @@ setup(
     },
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.7",
+    license="Apache-2.0",
 )
