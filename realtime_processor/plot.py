@@ -22,25 +22,42 @@ class Plot(FigureCanvas):
         self.ax = self.fig.add_subplot(1, 1, 1)
         self.image = None 
         self.colorbar = None
-        self.circle = Circle((0, 0), 1.0, edgecolor='k', fill=False, facecolor='none', alpha=0.3)
-        self.ax.add_artist(self.circle)
-        self._setup_axes()
         self.marker_sources = []
+        self._setup_axes()
+        self._setup_polar_overlay()
 
     def _setup_axes(self):
         self.ax.set_xlim(1, -1)
-        self.ax.set_xticks(np.arange(-1, 1.1, 0.5))
-        self.ax.set_yticks(np.arange(-1, 1.1, 0.5))
-        self.ax.set_xlabel('$ℓ$', fontsize=14)
-        self.ax.set_ylabel('$m$', fontsize=14)
+        ##No numbers in the axes
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
         self.ax.set_title("Sky Plot", fontsize=14, pad=250)
 
-        # Cardinal directions
-        self.ax.text(0.9, 0, 'E', ha='center', va='center', color='w', fontsize=17)
-        self.ax.text(-0.9, 0, 'W', ha='center', va='center', color='w', fontsize=17)
-        self.ax.text(0, 0.9, 'N', ha='center', va='center', color='w', fontsize=17)
-        self.ax.text(0, -0.9, 'S', ha='center', va='center', color='w', fontsize=17)
-        self.fig.tight_layout(rect=[0, 0, 1, 0.95])
+    def _setup_polar_overlay(self):
+        self.ax_polar = self.fig.add_subplot(1, 1, 1, projection='polar', frameon=False)
+        self.ax_polar.patch.set_alpha(0)
+
+        self.ax_polar.set_position([0, 0, 0.74, 0.74])
+        
+        # North up, clockwise
+        self.ax_polar.set_theta_zero_location('N')
+        # Elevation → radius (0° zenith at center, 90° horizon at edge)
+        self.ax_polar.set_rticks([75, 60, 45, 30, 15])
+        self.ax_polar.set_rlim(90, 0)
+        self.ax_polar.set_rlabel_position(45/2)
+
+        # Azimuth ticks
+        thetas = np.arange(0, 360, 45)
+        self.ax_polar.set_thetagrids(thetas, labels=[f"{t}°" for t in thetas])
+
+        # styling
+        self.ax_polar.grid(color='white', alpha=0.4)
+
+        self.ax_polar.text(np.deg2rad(0), -20, 'N', ha='center', va='center', color='black', fontsize=17)
+        self.ax_polar.text(np.deg2rad(90), -20, 'E', ha='center', va='center', color='black', fontsize=17)
+        self.ax_polar.text(np.deg2rad(180), -20, 'S', ha='center', va='center', color='black', fontsize=17)
+        self.ax_polar.text(np.deg2rad(270), -20, 'W', ha='center', va='center', color='black', fontsize=17)
+        self.fig.tight_layout(rect=[0, 0, 1, 1])
 
     def plot_matrix(self,
     xst_data,
@@ -135,11 +152,14 @@ class Plot(FigureCanvas):
 
         subtitle_text = (f"({freq / 1e6:.1f} MHz), {str(obstime)[:16]}\n" + bodies_info)
 
+        circle = Circle((0, 0), 1.0, edgecolor='k', fill=False, facecolor='none', alpha=0.3)
+        self.ax.add_artist(circle)
+
         if self.image is None:
             self.image = self.ax.imshow(sky_img, origin='lower', cmap=cm.Spectral_r,
-                                        extent=(1, -1, -1, 1), clip_path=self.circle, clip_on=True, **kwargs)
+                                        extent=(1, -1, -1, 1), clip_path=circle, clip_on=True, **kwargs)
             divider = make_axes_locatable(self.ax)
-            cax = divider.append_axes("right", size="5%", pad=0.2, axes_class=maxes.Axes)
+            cax = divider.append_axes("right", size="5%", pad=0.5, axes_class=maxes.Axes)
             self.colorbar = self.fig.colorbar(self.image, cax=cax, orientation="vertical", format="%.2e")
         else:
             self.image.set_data(sky_img)
@@ -153,9 +173,9 @@ class Plot(FigureCanvas):
             artist.remove()
         self.marker_sources = []
 
-        self.ax.set_title(f"Sky image for {station_name}", fontsize=14, pad=250)
-        self.ax.text(0.5, 1.02, subtitle_text, transform=self.ax.transAxes,
-                     ha='center', va='bottom', fontsize=11)
+        # self.ax.set_title(f"Sky image for {station_name}", fontsize=14, pad=250)
+        # self.ax.text(0.5, 1.02, subtitle_text, transform=self.ax.transAxes,
+        #              ha='center', va='bottom', fontsize=11)
 
         if marked_bodies_lmn:
             for body_name, data in marked_bodies_lmn.items():
