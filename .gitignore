@@ -6,6 +6,7 @@ videoResults/
 movies/
 imgSameSubband/*
 jupyters/
+exec.sh
 
 results/*
 CalTables/*

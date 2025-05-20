@@ -24,41 +24,59 @@ class Plot(FigureCanvas):
         self.colorbar = None
         self.marker_sources = []
         self._setup_axes()
-        self._setup_polar_overlay()
 
     def _setup_axes(self):
         self.ax.set_xlim(1, -1)
-        ##No numbers in the axes
+        self.ax.set_ylim(-1, 1)
         self.ax.set_xticks([])
         self.ax.set_yticks([])
-        self.ax.set_title("Sky Plot", fontsize=14, pad=250)
-
-    def _setup_polar_overlay(self):
-        self.ax_polar = self.fig.add_subplot(1, 1, 1, projection='polar', frameon=False)
-        self.ax_polar.patch.set_alpha(0)
-
-        self.ax_polar.set_position([0, 0, 0.74, 0.74])
+        self.ax.set_aspect('equal')
         
-        # North up, clockwise
-        self.ax_polar.set_theta_zero_location('N')
-        # Elevation → radius (0° zenith at center, 90° horizon at edge)
-        self.ax_polar.set_rticks([75, 60, 45, 30, 15])
-        self.ax_polar.set_rlim(90, 0)
-        self.ax_polar.set_rlabel_position(45/2)
+        ## draw exterior circle
+        circle = Circle((0, 0), 1, edgecolor='k', facecolor='none', alpha=0.7, zorder=0)
+        self.ax.add_patch(circle)
+        self.ax.add_artist(circle)
 
-        # Azimuth ticks
-        thetas = np.arange(0, 360, 45)
-        self.ax_polar.set_thetagrids(thetas, labels=[f"{t}°" for t in thetas])
+        ## elevation rings
+        for el in [15, 30, 45, 60, 75]:
+            radius = np.cos(np.deg2rad(el))
+            ring = Circle((0, 0), radius,   
+                          edgecolor='black', facecolor='none',
+                          linestyle='-', alpha=0.7, zorder=1, linewidth=0.5)
+            self.ax.add_patch(ring)
+        
+            ## labeling the rings
+            theta = np.deg2rad(337)
+            x, y = np.sin(theta)*radius, np.cos(theta)*radius
+            self.ax.text(x, y + 0.02, f"{el}°",
+                         color='black', fontsize=6,
+                         ha='left', va='bottom', zorder=2)
 
-        # styling
-        self.ax_polar.grid(color='white', alpha=0.4)
+        ## azimuth spokes every 45°
+        for az in range(0, 360, 45):
+            theta = np.deg2rad(az)
+            x = np.sin(theta)
+            y = np.cos(theta)
+            ## spoke line
+            self.ax.plot([0, x], [0, y],
+                         linestyle='-', color='black',
+                         alpha=0.7, zorder=1, linewidth=0.5)
+            
+            ## labeling spokes
+            self.ax.text(1.1*x, 1.1*y,
+                         f"{az}°",
+                         ha='center', va='center',
+                         color='black', fontsize=8, zorder=2)
 
-        self.ax_polar.text(np.deg2rad(0), -20, 'N', ha='center', va='center', color='black', fontsize=17)
-        self.ax_polar.text(np.deg2rad(90), -20, 'E', ha='center', va='center', color='black', fontsize=17)
-        self.ax_polar.text(np.deg2rad(180), -20, 'S', ha='center', va='center', color='black', fontsize=17)
-        self.ax_polar.text(np.deg2rad(270), -20, 'W', ha='center', va='center', color='black', fontsize=17)
-        self.fig.tight_layout(rect=[0, 0, 1, 1])
+        ## N/E/S/W
+        for az, lbl in [(0,'N'), (90,'E'), (180,'S'), (270,'W')]:
+            theta = np.deg2rad(az)
+            x, y = np.sin(theta)*1.2, np.cos(theta)*1.2
+            self.ax.text(x, y, lbl,
+                         ha='center', va='center',
+                         color='black', fontsize=14, zorder=2)
 
+        self.fig.tight_layout(rect=[0, 0, 1, 0.85])
     def plot_matrix(self,
     xst_data,
     dat_path,
@@ -85,7 +103,6 @@ class Plot(FigureCanvas):
                                                        caltable_dir=caltable_dir)
         db = LofarAntennaDatabase()
         # Split into the XX and YY polarisations (RCUs)
-        # This needs to be modified in future for LBA sparse
         visibilities_xx = visibilities[0::2, 0::2]
         visibilities_yy = visibilities[1::2, 1::2]
         # Stokes I
@@ -116,22 +133,17 @@ class Plot(FigureCanvas):
             'Moon': get_body('moon', time=obstime_astropy),
             'Sun': get_sun(time=obstime_astropy).transform_to(gcrs_instance),
             '3C196': SkyCoord(ra=float(config['3C196']['RA']) * u.deg, dec=float(config['3C196']['DEC']) * u.deg),
-            # SkyCoord("23 23 26.0 +58 48 41", unit=(u.hourangle, u.deg))
-            # 'J0133-3629': [1.0440, -0.662, -0.225],
             '3C48': SkyCoord(config['3C48']['ICRS_coord'], unit=(u.hourangle, u.deg)),
             'For A': SkyCoord(config['For A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
             '3C123': SkyCoord(config['3C123']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            # 'J0444-2809': [0.9710, -0.894, -0.118],
             '3C138': SkyCoord(config['3C138']['ICRS_coord'], unit=(u.hourangle, u.deg)),
             'Pic A': SkyCoord(config['Pic A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
             'Tau A': SkyCoord(config['Tau A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
             '3C147': SkyCoord(config['3C147']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            # 'Hyd A': [1.7795, -0.9176, -0.084, -0.0139, 0.030],
             '3C286': SkyCoord(config['3C286']['ICRS_coord'], unit=(u.hourangle, u.deg)),
             '3C353': SkyCoord(config['3C353']['ICRS_coord'], unit=(u.hourangle, u.deg)),
             '3C380': SkyCoord(config['3C380']['ICRS_coord'], unit=(u.hourangle, u.deg)),
             '3C444': SkyCoord(config['3C444']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            # 'casa': [3.3584, -0.7518, -0.035, -0.071]
         }
 
         marked_bodies_lmn = {}
@@ -145,46 +157,59 @@ class Plot(FigureCanvas):
                     'azimuth': altaz.az.deg
                 }
 
-        bodies_info = "\n".join(
-                [f"{name}: Elevation {data['elevation']:.2f}°, Azimuth {data['azimuth']:.2f}°"
-                for name, data in marked_bodies_lmn.items()]
-            )
-
-        subtitle_text = (f"({freq / 1e6:.1f} MHz), {str(obstime)[:16]}\n" + bodies_info)
-
-        circle = Circle((0, 0), 1.0, edgecolor='k', fill=False, facecolor='none', alpha=0.3)
-        self.ax.add_artist(circle)
-
         if self.image is None:
             self.image = self.ax.imshow(sky_img, origin='lower', cmap=cm.Spectral_r,
-                                        extent=(1, -1, -1, 1), clip_path=circle, clip_on=True, **kwargs)
+                                        extent=(1, -1, -1, 1), clip_on=True, **kwargs)
             divider = make_axes_locatable(self.ax)
-            cax = divider.append_axes("right", size="5%", pad=0.5, axes_class=maxes.Axes)
+            cax = divider.append_axes("right", size="5%", pad=1, axes_class=maxes.Axes)
             self.colorbar = self.fig.colorbar(self.image, cax=cax, orientation="vertical", format="%.2e")
         else:
             self.image.set_data(sky_img)
             self.image.autoscale()
-
-        ##Clear previous
-        # self.ax.set_title("") 
-        for text in self.ax.texts:
-            text.remove()
+        
+        ##Clear markers and text from previous plot
         for artist in getattr(self, "marker_sources", []):
             artist.remove()
         self.marker_sources = []
+        
+        # Remove previous info text if it exists
+        if hasattr(self, "info_text") and self.info_text is not None:
+            self.info_text.remove()
 
-        # self.ax.set_title(f"Sky image for {station_name}", fontsize=14, pad=250)
-        # self.ax.text(0.5, 1.02, subtitle_text, transform=self.ax.transAxes,
-        #              ha='center', va='bottom', fontsize=11)
+        # Group sources 3 per line
+        bodies_info_lines = [
+            f"{name}: Elevation {data['elevation']:.2f}°, Azimuth {data['azimuth']:.2f}°"
+            for name, data in marked_bodies_lmn.items()
+        ]
+        # Split into lines of 3
+        grouped_lines = [
+            "    ".join(bodies_info_lines[i:i+3])
+            for i in range(0, len(bodies_info_lines), 3)
+        ]
+        bodies_info = "\n".join(grouped_lines)
 
+        subtitle_text = (f"({freq / 1e6:.1f} MHz), {str(obstime)[:16]}\n" + bodies_info)
+
+        self.fig.suptitle(f"Sky image for {station_name}", fontsize=16)
+        self.info_text = self.fig.text(
+            0.5, 0.94, subtitle_text,
+            ha='center', va='top',
+            fontsize=8,
+            color='black'
+        )
+        
         if marked_bodies_lmn:
             for body_name, data in marked_bodies_lmn.items():
                 lmn = data['lmn']
                 marker, = self.ax.plot([lmn[0]], [lmn[1]], marker='x', color='black', mew=0.5)
-                self.marker_sources.append(marker)
-                self.ax.annotate(body_name, (lmn[0], lmn[1]))
-
+                label = self.ax.text(lmn[0], lmn[1], body_name, color='black',
+                            fontsize=9, ha='left', va='bottom', zorder=2)
+                
+                self.marker_sources.extend([marker, label])
+        
         self.draw()
+
+
         fname = f"{obstime:%Y%m%d}_{obstime:%H%M%S}_{station_name}_SB{subband}"
         today_date = datetime.today().strftime('%Y-%m-%d')
         output_dir = os.path.join(os.path.dirname(dat_path), f"{today_date}_realtime_observation")

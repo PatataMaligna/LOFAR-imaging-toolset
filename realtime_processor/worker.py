@@ -11,6 +11,7 @@ class DataProcessorWorker(QObject):
     update_signal = pyqtSignal(object, str, int, str)
     finished = pyqtSignal()
     frequency_signal = pyqtSignal(str)
+    
     def __init__(self, input_dir, output_dir):
         super().__init__()
         self.input_dir = input_dir
@@ -44,7 +45,7 @@ class DataProcessorWorker(QObject):
         while True:
             dat_files = [f for f in os.listdir(self.input_dir) if f.endswith(".dat")]
             new_files = []
-
+            print(f"Detected {len(dat_files)} .dat files.")
             for dat_file in dat_files:
                 dat_path = os.path.join(self.input_dir, dat_file)
                 last_modified = os.path.getmtime(dat_path)
@@ -66,7 +67,11 @@ class DataProcessorWorker(QObject):
             for dat_file in new_files:
                 dat_path = os.path.join(self.input_dir, dat_file)
                 header_file = dat_path.replace(".dat", ".h")
-                subband = get_subband(header_file) if os.path.exists(header_file) else get_subband_from_shell(shell_script)
+
+                if os.path.exists(header_file):
+                    subband = get_subband(header_file)
+                else:
+                    subband = get_subband_from_shell(shell_script)
 
                 if isinstance(subband, tuple) and len(subband) == 2:
                     subband1, subband2 = subband
