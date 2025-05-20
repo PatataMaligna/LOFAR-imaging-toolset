@@ -77,6 +77,7 @@ class Plot(FigureCanvas):
                          color='black', fontsize=14, zorder=2)
 
         self.fig.tight_layout(rect=[0, 0, 1, 0.85])
+
     def plot_matrix(self,
     xst_data,
     dat_path,
@@ -92,7 +93,6 @@ class Plot(FigureCanvas):
     
         config = configparser.ConfigParser()
         config.read(configSourcersFile)
-        
         obsdatestr, obstimestr, *_ = os.path.basename(dat_path).rstrip(".dat").split("_")
         obstime = datetime.strptime(obsdatestr + ":" + obstimestr, '%Y%m%d:%H%M%S')
 
@@ -207,7 +207,7 @@ class Plot(FigureCanvas):
                 
                 self.marker_sources.extend([marker, label])
         
-        self.draw()
+        # self.draw()
 
 
         fname = f"{obstime:%Y%m%d}_{obstime:%H%M%S}_{station_name}_SB{subband}"
@@ -215,3 +215,4 @@ class Plot(FigureCanvas):
         output_dir = os.path.join(os.path.dirname(dat_path), f"{today_date}_realtime_observation")
         print(output_dir)
         self.fig.savefig(os.path.join(output_dir, f'{fname}_sky_calibrated_{freq / 1e6:.1f}MHz.png'), bbox_inches='tight', dpi=200)
+        return self.fig

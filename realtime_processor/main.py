@@ -22,7 +22,6 @@ def main():
     print(f"Output directory: {output_dir}")
 
     app = QApplication(sys.argv) 
-    from threading import Event
     window = MainWindow()
     window.show()
 

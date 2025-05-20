@@ -2,15 +2,12 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton
 )
-
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal
 from realtime_processor.plot import Plot
-from datetime import datetime
-from threading import Lock
-import time
+from realtime_processor.plotWorker import PlotWorker
 class MainWindow(QMainWindow):
     """Main window for the real-time plot."""
-
+    plot_drawn = pyqtSignal(object)
     plot_ready = pyqtSignal()
     frequency_signal = pyqtSignal(str)
     update_signal = pyqtSignal(object, str, int, str)
@@ -19,7 +16,6 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Real-Time Plot image")
         self.setGeometry(0, 0, 1024, 768)
-
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -51,10 +47,22 @@ class MainWindow(QMainWindow):
 
     def update_plot(self, covariance_matrix, dat_path, subband = None, rcu_mode = "3"):
         """Update the plot with a new matrix."""
-        # subtitle = datetime.now().strftime('%H:%M:%S')
-        self.plot_widget.plot_matrix(covariance_matrix, dat_path, subband, rcu_mode, vmin=None, vmax=None)
-        ##Signal to indicate that the plot has been drawn
-        self.plot_ready.emit() 
+        self.plot_worker = PlotWorker(covariance_matrix, dat_path, subband, rcu_mode)
+        self.plot_thread = QThread()
+        self.plot_worker.moveToThread(self.plot_thread)
+
+        self.plot_thread.started.connect(self.plot_worker.run)
+        self.plot_worker.plot_drawn.connect(self.on_plot_ready)
+        self.plot_worker.plot_drawn.connect(self.plot_thread.quit)
+        self.plot_worker.plot_drawn.connect(self.plot_worker.deleteLater)
+        self.plot_thread.finished.connect(self.plot_thread.deleteLater)
+        self.plot_thread.start()
+
+    def on_plot_ready(self, sky_fig):
+        """Handle the plot when it's ready."""
+        self.plot_widget = sky_fig
+        self.plot_ready.emit()
+        self.plot_thread.quit()
 
     def submit_frequency(self):
         """Submit the frequency input."""
