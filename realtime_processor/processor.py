@@ -51,7 +51,7 @@ def get_rcu_mode(shell_script):
     try:
         with open(shell_script, "r") as file:
             for line in file:
-                match = re.search(r"--rcumode=(\d)", line)
+                match = re.search(r"rcumode=(\d)", line)
                 if match:
                     return match.group(1)
     except Exception as e:
