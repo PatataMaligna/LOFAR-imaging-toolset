@@ -13,7 +13,7 @@ class MainWindow(QMainWindow):
 
     plot_ready = pyqtSignal()
     frequency_signal = pyqtSignal(str)
-    update_signal = pyqtSignal(object, str, int, str)
+    update_signal = pyqtSignal(object, str, int, str, datetime)
 
     def __init__(self):
         super().__init__()
@@ -49,10 +49,9 @@ class MainWindow(QMainWindow):
 
         self.update_signal.connect(self.update_plot)
 
-    def update_plot(self, covariance_matrix, dat_path, subband = None, rcu_mode = "3"):
+    def update_plot(self, covariance_matrix, dat_path, subband = None, rcu_mode = "3", obstime = None):
         """Update the plot with a new matrix."""
-        # subtitle = datetime.now().strftime('%H:%M:%S')
-        self.plot_widget.plot_matrix(covariance_matrix, dat_path, subband, rcu_mode, vmin=None, vmax=None)
+        self.plot_widget.plot_matrix(covariance_matrix, dat_path, subband, rcu_mode, obstime, vmin=None, vmax=None)
         ##Signal to indicate that the plot has been drawn
         self.plot_ready.emit() 
 

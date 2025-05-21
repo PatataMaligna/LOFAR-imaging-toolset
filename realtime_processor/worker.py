@@ -1,5 +1,6 @@
 import os
 import time
+from datetime import datetime, timedelta
 from tqdm import tqdm
 from PyQt6.QtCore import QObject, pyqtSignal, QCoreApplication
 from realtime_processor.monitor import detect_new_data
@@ -8,7 +9,7 @@ from realtime_processor.singlestationutil import sb_from_freq
 from .video import create_video
 
 class DataProcessorWorker(QObject):
-    update_signal = pyqtSignal(object, str, int, str)
+    update_signal = pyqtSignal(object, str, int, str, datetime)
     finished = pyqtSignal()
     frequency_signal = pyqtSignal(str)
     
@@ -25,6 +26,11 @@ class DataProcessorWorker(QObject):
     def on_frequency_update(self, freq):
         print(f"Frequency updated to: {freq}")
         self.selected_frequency = freq
+
+    def get_obstime_from_filename(self, dat_path):
+        basename = os.path.basename(dat_path)
+        obsdatestr, obstimestr, *_ = basename.rstrip(".dat").split("_")
+        return datetime.strptime(obsdatestr + ":" + obstimestr, '%Y%m%d:%H%M%S')
 
     def run(self):
         shell_script = None
@@ -68,6 +74,8 @@ class DataProcessorWorker(QObject):
                 dat_path = os.path.join(self.input_dir, dat_file)
                 header_file = dat_path.replace(".dat", ".h")
 
+                self.last_obstime = self.get_obstime_from_filename(dat_path)
+
                 if os.path.exists(header_file):
                     subband = get_subband(header_file)
                 else:
@@ -93,24 +101,24 @@ class DataProcessorWorker(QObject):
                     covariance_matrix, last_size = detect_new_data(dat_path, last_size)
                     if covariance_matrix is not None:
                         self.waiting_for_plot = True
-                    
                         if self.selected_frequency is not None:
                             print(f"Selected frequency: {self.selected_frequency}")
                             subband = sb_from_freq(float(self.selected_frequency) * 1e6, rcu_mode)
                             print(f"Subband from frequency: {subband}")
-                            self.update_signal.emit(covariance_matrix, dat_path, subband, rcu_mode)
+                            self.update_signal.emit(covariance_matrix, dat_path, subband, rcu_mode, self.last_obstime)
                         elif case_b and subband1 <= subband2:
-                            self.update_signal.emit(covariance_matrix, dat_path, subband1, rcu_mode)
+                            self.update_signal.emit(covariance_matrix, dat_path, subband1, rcu_mode, self.last_obstime)
                             subband1 += 1
                         elif not case_b:
-                            self.update_signal.emit(covariance_matrix, dat_path, subband, rcu_mode)
+                            self.update_signal.emit(covariance_matrix, dat_path, subband, rcu_mode, self.last_obstime)
 
                         while self.waiting_for_plot:
                             QCoreApplication.processEvents()                            
-                            # time.sleep(1)
+                            time.sleep(0.05)
 
-                        pbar.update(last_size - prev_size)
+                        self.last_obstime += timedelta(seconds=1)
                         start_time = time.time()
+                    pbar.update(last_size - prev_size)
 
         create_video(self.output_dir, os.path.join(self.output_dir, f"generated_video.mp4"))
         self.finished.emit()

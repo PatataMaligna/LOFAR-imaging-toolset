@@ -82,6 +82,7 @@ class Plot(FigureCanvas):
     dat_path,
     subband = None,
     rcu_mode = "3",
+    obstime = datetime.now(),
     title = None,
     caltable_dir: str = "./test/CalTables/LV614",
     configSourcersFile = "sources.ini",
@@ -93,8 +94,13 @@ class Plot(FigureCanvas):
         config = configparser.ConfigParser()
         config.read(configSourcersFile)
         
-        obsdatestr, obstimestr, *_ = os.path.basename(dat_path).rstrip(".dat").split("_")
-        obstime = datetime.strptime(obsdatestr + ":" + obstimestr, '%Y%m%d:%H%M%S')
+        # obsdatestr, obstimestr, *_ = os.path.basename(dat_path).rstrip(".dat").split("_")
+        # time = datetime.strptime(obsdatestr + ":" + obstimestr, '%Y%m%d:%H%M%S')
+
+        # now = datetime.now()
+        # obstime = now.strftime('%Y%m%d:%H%M%S')
+        # obstime = datetime.strptime(obstime, '%Y%m%d:%H%M%S')
+
 
         assert xst_data.ndim == 2, "xst_data must be a 2D array"
 
@@ -188,7 +194,7 @@ class Plot(FigureCanvas):
         ]
         bodies_info = "\n".join(grouped_lines)
 
-        subtitle_text = (f"({freq / 1e6:.1f} MHz), {str(obstime)[:16]}\n" + bodies_info)
+        subtitle_text = (f"({freq / 1e6:.1f} MHz), {str(obstime)}\n" + bodies_info)
 
         self.fig.suptitle(f"Sky image for {station_name}", fontsize=16)
         self.info_text = self.fig.text(
@@ -210,8 +216,8 @@ class Plot(FigureCanvas):
         self.draw()
 
 
-        fname = f"{obstime:%Y%m%d}_{obstime:%H%M%S}_{station_name}_SB{subband}"
+        fname = f"{obstime:%Y%m%d}_{obstime:%H%M%S}_{station_name}_freq_{freq / 1e6:.1f}MHz"
         today_date = datetime.today().strftime('%Y-%m-%d')
         output_dir = os.path.join(os.path.dirname(dat_path), f"{today_date}_realtime_observation")
-        print(output_dir)
+
         self.fig.savefig(os.path.join(output_dir, f'{fname}_sky_calibrated_{freq / 1e6:.1f}MHz.png'), bbox_inches='tight', dpi=200)
