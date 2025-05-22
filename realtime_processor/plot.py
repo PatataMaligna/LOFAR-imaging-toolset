@@ -33,9 +33,9 @@ class Plot(FigureCanvas):
         self.ax.set_aspect('equal')
         
         ## draw exterior circle
-        circle = Circle((0, 0), 1, edgecolor='k', facecolor='none', alpha=0.7, zorder=0)
-        self.ax.add_patch(circle)
-        self.ax.add_artist(circle)
+        # circle = Circle((0, 0), 1, edgecolor='k', facecolor='none', alpha=0.7, zorder=0)
+        # self.ax.add_patch(circle)
+        # self.ax.add_artist(circle)
 
         ## elevation rings
         for el in [15, 30, 45, 60, 75]:
@@ -87,8 +87,8 @@ class Plot(FigureCanvas):
     caltable_dir: str = "./test/CalTables/LV614",
     configSourcersFile = "sources.ini",
     station_name = "LV614",
-    npix_l = 130,
-    npix_m = 130,
+    npix_l = 131,
+    npix_m = 131,
     **kwargs):
     
         config = configparser.ConfigParser()
@@ -163,9 +163,12 @@ class Plot(FigureCanvas):
                     'azimuth': altaz.az.deg
                 }
 
+        circle1 = Circle((0, 0), 1.0, edgecolor='k', fill=False, facecolor='none', alpha=0.3)
+        self.ax.add_artist(circle1)
+
         if self.image is None:
             self.image = self.ax.imshow(sky_img, origin='lower', cmap=cm.Spectral_r,
-                                        extent=(1, -1, -1, 1), clip_on=True, **kwargs)
+                                        extent=(1, -1, -1, 1), clip_path=circle1, clip_on=True, **kwargs)
             divider = make_axes_locatable(self.ax)
             cax = divider.append_axes("right", size="5%", pad=1, axes_class=maxes.Axes)
             self.colorbar = self.fig.colorbar(self.image, cax=cax, orientation="vertical", format="%.2e")
@@ -213,11 +216,11 @@ class Plot(FigureCanvas):
                 
                 self.marker_sources.extend([marker, label])
         
-        self.draw()
+        # self.draw()
 
 
-        fname = f"{obstime:%Y%m%d}_{obstime:%H%M%S}_{station_name}_freq_{freq / 1e6:.1f}MHz"
+        fname = f"{obstime:%Y%m%d}_{obstime:%H%M%S}_{station_name}"
         today_date = datetime.today().strftime('%Y-%m-%d')
         output_dir = os.path.join(os.path.dirname(dat_path), f"{today_date}_realtime_observation")
 
-        self.fig.savefig(os.path.join(output_dir, f'{fname}_sky_calibrated_{freq / 1e6:.1f}MHz.png'), bbox_inches='tight', dpi=200)
+        self.fig.savefig(os.path.join(output_dir, f'{fname}_sky_calibrated_{freq / 1e6:.1f}MHz.png'), bbox_inches='tight', dpi=100)

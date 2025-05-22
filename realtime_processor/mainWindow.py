@@ -66,3 +66,4 @@ class MainWindow(QMainWindow):
                 print("Frequency must be between 10 and 99 MHz.")
         except ValueError:
             print("Invalid frequency input.")
+            

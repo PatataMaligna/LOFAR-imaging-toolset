@@ -14,12 +14,12 @@ def wait_for_dat_file(input_dir):
             time.sleep(1)
     return dat_file
 
-def detect_new_data(dat_file, last_size, num_rcu=192):
+def detect_new_data_from_stream(f, last_size, num_rcu=192):
     """
     Reads new data from the .dat file in fixed-size chunks.
 
     Args:
-        dat_file (str): Path to the .dat file.
+        f (file object): Open file object for the .dat file.
         last_size (int): Last read position in the file.
         num_rcu (int): Number of RCUs (default: 192).
 
@@ -29,22 +29,17 @@ def detect_new_data(dat_file, last_size, num_rcu=192):
     """
     matrix_size_bytes = num_rcu * num_rcu * np.dtype(np.complex128).itemsize
 
-    current_size = os.path.getsize(dat_file)
-
-    total_size = current_size - last_size
+    f.seek(0, os.SEEK_END)
+    current_size = f.tell()
 
     if current_size <= last_size:
         return None, last_size
-    with open(dat_file, "rb") as f:
-        f.seek(last_size)  
-        chunk = None
-        if last_size + matrix_size_bytes <= current_size:
-            chunk = np.fromfile(f, dtype=np.complex128, count=num_rcu * num_rcu)
-            chunk = chunk.reshape((num_rcu, num_rcu))
-            last_size += matrix_size_bytes
-            # print(f"Matrix size (bytes): {matrix_size_bytes}")
-            # print(f"Current file size: {current_size}, Last read position: {last_size}")
-        else:
-            print("Warning: Incomplete chunk detected. Ignoring until next read.")
-            return None, last_size
-    return chunk, last_size
+
+    f.seek(last_size)
+    if last_size + matrix_size_bytes <= current_size:
+        chunk = np.fromfile(f, dtype=np.complex128, count=num_rcu * num_rcu)
+        chunk = chunk.reshape((num_rcu, num_rcu))
+        last_size += matrix_size_bytes
+        return chunk, last_size
+    else:
+        return None, last_size

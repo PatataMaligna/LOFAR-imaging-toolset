@@ -35,8 +35,8 @@ def get_subband_from_shell(shell_script):
                 if match_a:
                     return int(match_a.group(1))
 
-                # Case B: --subbands='150:271'
-                match_b = re.search(r"--subbands=(\d+):(\d+)", line)
+                # Case B: subbands='150:271'
+                match_b = re.search(r"subbands=(\d+):(\d+)", line)
                 if match_b:
                     first_number = int(match_b.group(1))
                     second_number = int(match_b.group(2))
