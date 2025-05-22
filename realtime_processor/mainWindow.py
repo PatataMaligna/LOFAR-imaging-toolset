@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
     QLabel, QLineEdit, QPushButton
 )
 
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal, QCoreApplication
 from realtime_processor.plot import Plot
 from datetime import datetime
 from threading import Lock
@@ -52,6 +52,7 @@ class MainWindow(QMainWindow):
     def update_plot(self, covariance_matrix, dat_path, subband = None, rcu_mode = "3", obstime = None):
         """Update the plot with a new matrix."""
         self.plot_widget.plot_matrix(covariance_matrix, dat_path, subband, rcu_mode, obstime, vmin=None, vmax=None)
+        QCoreApplication.processEvents()                            
         ##Signal to indicate that the plot has been drawn
         self.plot_ready.emit() 
 
@@ -66,4 +67,3 @@ class MainWindow(QMainWindow):
                 print("Frequency must be between 10 and 99 MHz.")
         except ValueError:
             print("Invalid frequency input.")
-            

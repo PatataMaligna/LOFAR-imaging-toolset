@@ -37,6 +37,7 @@ class DataProcessorWorker(QObject):
         for file in os.listdir(self.input_dir):
             if file.endswith(".sh"):
                 shell_script = os.path.join(self.input_dir, file)
+                print(f"Shell script found: {shell_script}")
                 break
         if not shell_script:
             print("No shell script found.")
@@ -75,11 +76,11 @@ class DataProcessorWorker(QObject):
                 header_file = dat_path.replace(".dat", ".h")
 
                 self.last_obstime = self.get_obstime_from_filename(dat_path)
-
                 if os.path.exists(header_file):
                     subband = get_subband(header_file)
                 else:
                     subband = get_subband_from_shell(shell_script)
+                    print(f"Subband from shell script: {subband}")
 
                 if isinstance(subband, tuple) and len(subband) == 2:
                     subband1, subband2 = subband

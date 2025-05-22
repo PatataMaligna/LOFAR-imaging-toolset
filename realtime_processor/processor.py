@@ -31,15 +31,16 @@ def get_subband_from_shell(shell_script):
         with open(shell_script, "r") as file:
             for line in file:
                 # Case A: rspctl --xcsubband=167
-                match_a = re.search(r"rspctl\s+--xcsubband=(\d+)", line)
-                if match_a:
-                    return int(match_a.group(1))
+                # match_a = re.search(r"rspctl\s+--xcsubband=(\d+)", line)
+                # if match_a:
+                #     return int(match_a.group(1))
 
-                # Case B: subbands='150:271'
-                match_b = re.search(r"subbands=(\d+):(\d+)", line)
+                # Case B: subbands=['150:271']
+                match_b = re.search(r"subbands=['\"]?(\d+):(\d+)['\"]?", line)
                 if match_b:
                     first_number = int(match_b.group(1))
                     second_number = int(match_b.group(2))
+                    print(f"Subband range: {first_number} to {second_number}")
                     return first_number, second_number
 
     except Exception as e:
