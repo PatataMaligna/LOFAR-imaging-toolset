@@ -76,11 +76,11 @@ class DataProcessorWorker(QObject):
                 header_file = dat_path.replace(".dat", ".h")
 
                 self.last_obstime = self.get_obstime_from_filename(dat_path)
-                if os.path.exists(header_file):
-                    subband = get_subband(header_file)
-                else:
+                if os.path.exists(shell_script):
                     subband = get_subband_from_shell(shell_script)
                     print(f"Subband from shell script: {subband}")
+                else:
+                    subband = get_subband(header_file)
 
                 if isinstance(subband, tuple) and len(subband) == 2:
                     subband1, subband2 = subband
