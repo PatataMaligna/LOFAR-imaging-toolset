@@ -29,8 +29,6 @@
 4. **Install Python deps**
 
    ```bash
-   pip install git+https://github.com/lofar-astron/lofarimaging.git
-   cd realtime_processor
    pip install -r requirements.txt
    ```
 
@@ -40,8 +38,7 @@
    > You must run the command from the `lofarimaging` folder (the parent of `realtime_processor`), **not** from inside the `realtime_processor` directory.  
    > This ensures Python can find the package and all imports work correctly.
    ```bash
-   cd ..
-   python3 -m realtime_processor.main /path/to/your/data
+   taskset -c 0-1 python3.12 -m realtime_processor.main /path/to/your/data
    ```
 
 ---
