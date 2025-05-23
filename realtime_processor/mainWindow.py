@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton
+    QLabel, QLineEdit, QPushButton, QMessageBox,
+    QGroupBox, QVBoxLayout, QCheckBox
 )
 
 from PyQt6.QtCore import pyqtSignal, QCoreApplication
@@ -8,6 +9,8 @@ from realtime_processor.plot import Plot
 from datetime import datetime
 from threading import Lock
 import time
+import configparser
+import os
 class MainWindow(QMainWindow):
     """Main window for the real-time plot."""
 
@@ -19,7 +22,10 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Real-Time Plot image")
         self.setGeometry(0, 0, 1024, 768)
-
+        # Read sources from sources.ini
+        config = configparser.ConfigParser()
+        config.read("./sources.ini")
+        self.sources = list(config.sections())
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -39,6 +45,18 @@ class MainWindow(QMainWindow):
         ##Push the button + text upp
         control_layout.addStretch()
 
+        self.sources_group = QGroupBox("Show Sources")
+        self.sources_layout = QVBoxLayout()
+        self.source_checkboxes = {}
+        for source in self.sources:
+            cb = QCheckBox(source)
+            cb.setChecked(True)
+            cb.stateChanged.connect(self.on_sources_changed)
+            self.sources_layout.addWidget(cb)
+            self.source_checkboxes[source] = cb
+        self.sources_group.setLayout(self.sources_layout)
+        control_layout.addWidget(self.sources_group)
+
         self.submit_button.clicked.connect(self.submit_frequency)
 
         self.plot_widget = Plot()
@@ -51,8 +69,9 @@ class MainWindow(QMainWindow):
 
     def update_plot(self, covariance_matrix, dat_path, subband = None, rcu_mode = "3", obstime = None):
         """Update the plot with a new matrix."""
-        self.plot_widget.plot_matrix(covariance_matrix, dat_path, subband, rcu_mode, obstime, vmin=None, vmax=None)
-        QCoreApplication.processEvents()                            
+        self.plot_widget.plot_matrix(covariance_matrix, dat_path, subband, rcu_mode, obstime,
+                                    sources_to_display=self.sources, vmin=None, vmax=None)
+        QCoreApplication.processEvents()
         ##Signal to indicate that the plot has been drawn
         self.plot_ready.emit() 
 
@@ -63,7 +82,15 @@ class MainWindow(QMainWindow):
             if 10 <= freq <= 99:
                 self.selected_frequency = str(freq)
                 self.frequency_signal.emit(str(freq))
+                self.frequency_input.setText("")
             else:
-                print("Frequency must be between 10 and 99 MHz.")
+                raise ValueError
         except ValueError:
-            print("Invalid frequency input.")
+            QMessageBox.warning(self, "Invalid Frequency", "Please enter a frequency between 10 and 99 MHz.")
+
+    def on_sources_changed(self):
+        selected_sources = []
+        for name, cb in self.source_checkboxes.items():
+            if cb.isChecked():
+                selected_sources.append(name)
+        self.sources = selected_sources

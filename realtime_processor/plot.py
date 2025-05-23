@@ -83,6 +83,7 @@ class Plot(FigureCanvas):
     subband = None,
     rcu_mode = "3",
     obstime = datetime.now(),
+    sources_to_display = None,
     title = None,
     caltable_dir: str = "./test/CalTables/LV614",
     configSourcersFile = "sources.ini",
@@ -151,6 +152,12 @@ class Plot(FigureCanvas):
             '3C380': SkyCoord(config['3C380']['ICRS_coord'], unit=(u.hourangle, u.deg)),
             '3C444': SkyCoord(config['3C444']['ICRS_coord'], unit=(u.hourangle, u.deg)),
         }
+
+        filtered_bodies = {}
+        for k, v in marked_bodies.items():
+            if k in sources_to_display:
+                filtered_bodies[k] = v
+        marked_bodies = filtered_bodies
 
         marked_bodies_lmn = {}
         for body_name, body_coord in marked_bodies.items():
