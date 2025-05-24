@@ -76,7 +76,7 @@ class Plot(FigureCanvas):
                          ha='center', va='center',
                          color='black', fontsize=14, zorder=2)
 
-        self.fig.tight_layout(rect=[0, 0, 1, 0.85])
+        self.fig.tight_layout(rect=[0, 0, 1, 0.84])
     def plot_matrix(self,
     xst_data,
     dat_path,
@@ -129,29 +129,7 @@ class Plot(FigureCanvas):
         zenith = AltAz(az=0 * u.deg, alt=90 * u.deg, obstime=obstime_astropy,
                     location=station_earthlocation).transform_to(gcrs_instance)
     
-        marked_bodies = {
-            'Cas A': SkyCoord(ra=float(config['Cas A']['RA']) * u.deg, dec=float(config['Cas A']['DEC']) * u.deg),
-            'Cyg A': SkyCoord(ra=float(config['Cyg A']['RA']) * u.deg, dec=float(config['Cyg A']['DEC']) * u.deg),
-            'Per A': SkyCoord(ra=float(config['Per A']['RA']) * u.deg, dec=float(config['Per A']['DEC']) * u.deg),
-            'Her A': SkyCoord(ra=float(config['Her A']['RA']) * u.deg, dec=float(config['Her A']['DEC']) * u.deg),
-            'Cen A': SkyCoord(ra=float(config['Cen A']['RA']) * u.deg, dec=float(config['Cen A']['DEC']) * u.deg),
-            'Vir A': SkyCoord(ra=float(config['Vir A']['RA']) * u.deg, dec=float(config['Vir A']['DEC']) * u.deg),
-            '3C295': SkyCoord(ra=float(config['3C295']['RA']) * u.deg, dec=float(config['3C295']['DEC']) * u.deg),
-            'Moon': get_body('moon', time=obstime_astropy),
-            'Sun': get_sun(time=obstime_astropy).transform_to(gcrs_instance),
-            '3C196': SkyCoord(ra=float(config['3C196']['RA']) * u.deg, dec=float(config['3C196']['DEC']) * u.deg),
-            '3C48': SkyCoord(config['3C48']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            'For A': SkyCoord(config['For A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            '3C123': SkyCoord(config['3C123']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            '3C138': SkyCoord(config['3C138']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            'Pic A': SkyCoord(config['Pic A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            'Tau A': SkyCoord(config['Tau A']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            '3C147': SkyCoord(config['3C147']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            '3C286': SkyCoord(config['3C286']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            '3C353': SkyCoord(config['3C353']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            '3C380': SkyCoord(config['3C380']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-            '3C444': SkyCoord(config['3C444']['ICRS_coord'], unit=(u.hourangle, u.deg)),
-        }
+        marked_bodies = self.load_marked_bodies(obstime_astropy, gcrs_instance, configSourcersFile)
 
         filtered_bodies = {}
         for k, v in marked_bodies.items():
@@ -169,6 +147,8 @@ class Plot(FigureCanvas):
                     'elevation': altaz.alt.deg,
                     'azimuth': altaz.az.deg
                 }
+        
+        self.clear_plot()
 
         circle1 = Circle((0, 0), 1.0, edgecolor='k', fill=False, facecolor='none', alpha=0.3)
         self.ax.add_artist(circle1)
@@ -182,15 +162,6 @@ class Plot(FigureCanvas):
         else:
             self.image.set_data(sky_img)
             self.image.autoscale()
-        
-        ##Clear markers and text from previous plot
-        for artist in getattr(self, "marker_sources", []):
-            artist.remove()
-        self.marker_sources = []
-        
-        # Remove previous info text if it exists
-        if hasattr(self, "info_text") and self.info_text is not None:
-            self.info_text.remove()
 
         # Group sources 3 per line
         bodies_info_lines = [
@@ -207,6 +178,9 @@ class Plot(FigureCanvas):
         subtitle_text = (f"({freq / 1e6:.1f} MHz), {str(obstime)}\n" + bodies_info)
 
         self.fig.suptitle(f"Sky image for {station_name}", fontsize=16)
+        lines = subtitle_text.count('\n') + 1
+        line_height = 0.018
+
         self.info_text = self.fig.text(
             0.5, 0.94, subtitle_text,
             ha='center', va='top',
@@ -214,6 +188,21 @@ class Plot(FigureCanvas):
             color='black'
         )
         
+        not_visible_bodies = self.get_marked_bodies_not_visible(marked_bodies_lmn, marked_bodies)
+        
+        if not_visible_bodies:
+            not_visible_text = ", ".join(not_visible_bodies)
+            # Add the text in red below the main subtitle
+            y_pos = self.info_text.get_position()[1] - lines * line_height
+
+            self.info_text_not_visible = self.fig.text(
+                0.5, y_pos,
+                not_visible_text,
+                ha='center', va='top',
+                fontsize=8,
+                color='red'
+            )
+
         if marked_bodies_lmn:
             for body_name, data in marked_bodies_lmn.items():
                 lmn = data['lmn']
@@ -231,3 +220,54 @@ class Plot(FigureCanvas):
         output_dir = os.path.join(os.path.dirname(dat_path), f"{today_date}_realtime_observation")
 
         self.fig.savefig(os.path.join(output_dir, f'{fname}_sky_calibrated_{freq / 1e6:.1f}MHz.png'), bbox_inches='tight', dpi=100)
+
+    def get_marked_bodies_not_visible(self, marked_bodies_lmn, marked_bodies):
+        '''
+        Get the marked bodies that are not visible in the plot.
+        '''
+        not_visible_bodies = []
+        for name in marked_bodies:
+            if name not in marked_bodies_lmn:
+                not_visible_bodies.append(name)
+        return not_visible_bodies
+    
+    def clear_plot(self):
+        '''
+        Clear the plot by removing all artists and resetting the axes.
+        '''
+        for artist in getattr(self, "marker_sources", []):
+            artist.remove()
+        self.marker_sources = []
+        
+        # Remove previous info text if it exists
+        if hasattr(self, "info_text") and self.info_text is not None:
+            self.info_text.remove()
+
+        if hasattr(self, "info_text_not_visible") and self.info_text_not_visible is not None:
+            self.info_text_not_visible.remove()
+    
+    def load_marked_bodies(self, obstime_astropy, gcrs_instance, sources_ini_path):
+        '''
+        Load marked bodies from the sources.ini file.
+        '''
+        config = configparser.ConfigParser()
+        config.read(sources_ini_path)
+        marked_bodies = {}
+
+        for section in config.sections():
+            if section == "Moon":
+                marked_bodies["Moon"] = get_body('moon', time=obstime_astropy)
+            elif section == "Sun":
+                sun = get_sun(time=obstime_astropy)
+                if gcrs_instance is not None:
+                    sun = sun.transform_to(gcrs_instance)
+                marked_bodies["Sun"] = sun
+            elif "RA" in config[section] and "DEC" in config[section]:
+                ra = float(config[section]["RA"])
+                dec = float(config[section]["DEC"])
+                marked_bodies[section] = SkyCoord(ra=ra * u.deg, dec=dec * u.deg)
+            elif "ICRS_coord" in config[section]:
+                icrs = config[section]["ICRS_coord"]
+                marked_bodies[section] = SkyCoord(icrs, unit=(u.hourangle, u.deg))
+        marked_bodies = dict(sorted(marked_bodies.items()))
+        return marked_bodies

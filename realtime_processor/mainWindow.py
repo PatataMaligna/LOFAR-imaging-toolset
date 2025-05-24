@@ -18,14 +18,14 @@ class MainWindow(QMainWindow):
     frequency_signal = pyqtSignal(str)
     update_signal = pyqtSignal(object, str, int, str, datetime)
 
-    def __init__(self):
+    def __init__(self, realtime_mode=False):
         super().__init__()
         self.setWindowTitle("Real-Time Plot image")
         self.setGeometry(0, 0, 1024, 768)
         # Read sources from sources.ini
         config = configparser.ConfigParser()
         config.read("./sources.ini")
-        self.sources = list(config.sections())
+        self.sources = sorted(config.sections())
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -33,18 +33,20 @@ class MainWindow(QMainWindow):
         outer_layout = QHBoxLayout(self.central_widget)
 
         control_layout = QVBoxLayout()
-        self.frequency_label = QLabel("Enter Frequency (10 - 99) MHz:")
-        control_layout.addWidget(self.frequency_label)
+        if not realtime_mode:
+            self.frequency_label = QLabel("Enter Frequency (10 - 99) MHz:")
+            control_layout.addWidget(self.frequency_label)
 
-        self.frequency_input = QLineEdit()
-        control_layout.addWidget(self.frequency_input)
+            self.frequency_input = QLineEdit()
+            control_layout.addWidget(self.frequency_input)
 
-        self.submit_button = QPushButton("Submit Frequency")
-        control_layout.addWidget(self.submit_button)
+            self.submit_button = QPushButton("Submit Frequency")
+            control_layout.addWidget(self.submit_button)
 
-        ##Push the button + text upp
-        control_layout.addStretch()
-
+            ##Push the button + text upp
+            control_layout.addStretch()
+            self.submit_button.clicked.connect(self.submit_frequency)
+            
         self.sources_group = QGroupBox("Show Sources")
         self.sources_layout = QVBoxLayout()
         self.source_checkboxes = {}
@@ -57,7 +59,7 @@ class MainWindow(QMainWindow):
         self.sources_group.setLayout(self.sources_layout)
         control_layout.addWidget(self.sources_group)
 
-        self.submit_button.clicked.connect(self.submit_frequency)
+        
 
         self.plot_widget = Plot()
 

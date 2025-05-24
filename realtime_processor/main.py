@@ -1,19 +1,28 @@
 import sys
 import os
+import argparse
 from datetime import datetime
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import QThread
 from realtime_processor.mainWindow import MainWindow
 from realtime_processor.worker import DataProcessorWorker
 def main():
-    if len(sys.argv) < 2:
-        print("No directory in the input")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="LOFAR Imaging Processor")
+    parser.add_argument("data_path", help="Path to data directory")
+    parser.add_argument("--realtime", action="store_true", help="Enable real-time observation mode")
+    args = parser.parse_args()
 
-    input_dir = sys.argv[1]
+    input_dir = args.data_path
+
     if not os.path.exists(input_dir):
         print(f"Error: Input directory '{input_dir}' does not exist.")
         sys.exit(1)
+
+    if args.realtime:
+        print("Running in real-time mode")
+
+    else:
+        print("Running in local mode")
 
     today_date = datetime.today().strftime('%Y-%m-%d')
     output_dir = os.path.join(input_dir, f"{today_date}_realtime_observation")
@@ -23,12 +32,12 @@ def main():
 
     app = QApplication(sys.argv) 
     from threading import Event
-    window = MainWindow()
+    window = MainWindow(realtime_mode=args.realtime)
     window.show()
 
     # QThread setup
     thread = QThread()
-    worker = DataProcessorWorker(input_dir, output_dir)
+    worker = DataProcessorWorker(input_dir, output_dir, realtime_mode=args.realtime)
     worker.moveToThread(thread)
     
     thread.started.connect(worker.run)
