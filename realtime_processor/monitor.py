@@ -46,7 +46,8 @@ def detect_new_data_from_stream(f, last_size, num_rcu=192, realtime_mode=False, 
     if realtime_mode and last_size > 0:
         print(f"Current arrays read: {last_size / matrix_size_bytes}")
     last_size += matrix_size_bytes
-
+    print(f"Reading at position {f.tell()}")
+    # print(chunk)
     return chunk, last_size, last_time
 
 def get_data_from_subband(f, inputSubband, min_subband, max_subband, num_rcu=192):
@@ -67,4 +68,5 @@ def get_data_from_subband(f, inputSubband, min_subband, max_subband, num_rcu=192
     chunk_bytes = f.read(matrix_size_bytes)
     chunk = np.frombuffer(chunk_bytes, dtype=np.complex128, count=num_rcu * num_rcu)
     chunk = chunk.reshape((num_rcu, num_rcu))
+    
     return chunk

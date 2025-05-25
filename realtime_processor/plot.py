@@ -121,6 +121,7 @@ class Plot(FigureCanvas):
 
         baselines = station_xyz[:, np.newaxis, :] - station_xyz[np.newaxis, :, :]
 
+        # print(visibilities_stokes_i)
         sky_img = sky_imager(visibilities_stokes_i, baselines, freq, npix_l, npix_m)
 
         obstime_astropy = Time(obstime)
@@ -212,14 +213,14 @@ class Plot(FigureCanvas):
                 
                 self.marker_sources.extend([marker, label])
         
-        # self.draw()
+        self.draw()
 
 
         fname = f"{obstime:%Y%m%d}_{obstime:%H%M%S}_{station_name}"
         today_date = datetime.today().strftime('%Y-%m-%d')
         output_dir = os.path.join(os.path.dirname(dat_path), f"{today_date}_realtime_observation")
-
-        self.fig.savefig(os.path.join(output_dir, f'{fname}_sky_calibrated_{freq / 1e6:.1f}MHz.png'), bbox_inches='tight', dpi=100)
+        print(output_dir)
+        self.fig.savefig(os.path.join(output_dir, f'{fname}_sky_calibrated_{freq / 1e6:.1f}MHz.png'), bbox_inches='tight', dpi=200)
 
     def get_marked_bodies_not_visible(self, marked_bodies_lmn, marked_bodies):
         '''

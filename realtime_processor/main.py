@@ -43,6 +43,8 @@ def main():
     thread.started.connect(worker.run)
 
     window.frequency_signal.connect(worker.on_frequency_update)
+    window.continue_same_freq_signal.connect(worker.on_continue_same_freq)
+    window.continue_incr_freq_signal.connect(worker.on_continue_incr_freq)
     worker.update_signal.connect(window.update_plot)
     window.plot_ready.connect(worker.on_plot_ready)
     worker.finished.connect(thread.quit)

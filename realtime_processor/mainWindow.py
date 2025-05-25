@@ -17,6 +17,8 @@ class MainWindow(QMainWindow):
     plot_ready = pyqtSignal()
     frequency_signal = pyqtSignal(str)
     update_signal = pyqtSignal(object, str, int, str, datetime)
+    continue_same_freq_signal = pyqtSignal()
+    continue_incr_freq_signal = pyqtSignal()
 
     def __init__(self, realtime_mode=False):
         super().__init__()
@@ -43,10 +45,19 @@ class MainWindow(QMainWindow):
             self.submit_button = QPushButton("Submit Frequency")
             control_layout.addWidget(self.submit_button)
 
+            # Add new buttons below the frequency input
+            self.continue_same_freq_button = QPushButton("Continue same frequency")
+            control_layout.addWidget(self.continue_same_freq_button)
+
+            self.continue_incr_freq_button = QPushButton("Continue increasing frequency")
+            control_layout.addWidget(self.continue_incr_freq_button)
+
             ##Push the button + text upp
             control_layout.addStretch()
             self.submit_button.clicked.connect(self.submit_frequency)
-            
+            self.continue_same_freq_button.clicked.connect(self.continue_same_freq_signal.emit)
+            self.continue_incr_freq_button.clicked.connect(self.continue_incr_freq_signal.emit)
+
         self.sources_group = QGroupBox("Show Sources")
         self.sources_layout = QVBoxLayout()
         self.source_checkboxes = {}
