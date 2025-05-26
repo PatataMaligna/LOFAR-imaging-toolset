@@ -54,14 +54,19 @@ class DataProcessorWorker(QObject):
                     break
             if not shell_script:
                 print("No shell script found.")
-                ##DEFAULT RCU mode
+                ##DEFAULT parameters
                 rcu_mode = "3"
+                min_subband, max_subband = 51, 461
             else:
                 rcu_mode = get_rcu_mode(shell_script)
                 min_subband, max_subband = get_subband_from_shell(shell_script)
 
             ## INICITALIZE VARIABLES
             dat_files = [f for f in os.listdir(self.input_dir) if f.endswith(".dat")]
+            if not dat_files:
+                print("No .dat files found in the input directory.")
+                self.finished.emit()
+                return
             num_rcu = 192
             subband = min_subband
             last_size = 0
@@ -75,7 +80,7 @@ class DataProcessorWorker(QObject):
                         covariance_matrix, last_size, last_time = detect_new_data_from_stream(f, last_size , num_rcu, realtime_mode=True, last_time=last_time)
                         if covariance_matrix is not None:
                             self.waiting_for_plot = True
-                            if min_subband <= max_subband:
+                            if subband <= max_subband:
                                 self.update_signal.emit(covariance_matrix, dat_path, subband, rcu_mode, self.last_obstime)
                                 subband += 1
                             elif subband > max_subband:

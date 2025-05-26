@@ -77,6 +77,7 @@ class Plot(FigureCanvas):
                          color='black', fontsize=14, zorder=2)
 
         self.fig.tight_layout(rect=[0, 0, 1, 0.84])
+
     def plot_matrix(self,
     xst_data,
     dat_path,
@@ -95,19 +96,11 @@ class Plot(FigureCanvas):
         config = configparser.ConfigParser()
         config.read(configSourcersFile)
         
-        # obsdatestr, obstimestr, *_ = os.path.basename(dat_path).rstrip(".dat").split("_")
-        # time = datetime.strptime(obsdatestr + ":" + obstimestr, '%Y%m%d:%H%M%S')
-
-        # now = datetime.now()
-        # obstime = now.strftime('%Y%m%d:%H%M%S')
-        # obstime = datetime.strptime(obstime, '%Y%m%d:%H%M%S')
-
-
         assert xst_data.ndim == 2, "xst_data must be a 2D array"
 
         freq = freq_from_sb(subband, rcu_mode)
         visibilities, calibration_info = apply_calibration(xst_data, station_name, rcu_mode, subband,
-                                                       caltable_dir=caltable_dir)
+                                                    caltable_dir=caltable_dir)
         db = LofarAntennaDatabase()
         # Split into the XX and YY polarisations (RCUs)
         visibilities_xx = visibilities[0::2, 0::2]
