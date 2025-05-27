@@ -2,7 +2,7 @@ import cv2
 import glob
 import os
 import sys
-
+import re
 def main():
     if len(sys.argv) != 4:
         print("Usage: python video.py <image_folder> <frequency> <fps>")
@@ -24,9 +24,14 @@ def main():
         print("No images found")
         sys.exit(1)
 
+    match = re.search(r'(\d{8}_\d{6})', image_folder)
+    if match:
+        date_str = match.group(1)
+        print(date_str)
+        
     first = cv2.imread(image_files[0])
     h, w = first.shape[:2]
-    output_file = os.path.join(image_folder, f"movie_for_sky_calibrated_{frequency}.mp4")
+    output_file = os.path.join(image_folder, f"sky_image_video_{date_str}_with_{frequency}_MHz_{fps}_fps.mp4")
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     video = cv2.VideoWriter(output_file, fourcc, fps, (w, h))
