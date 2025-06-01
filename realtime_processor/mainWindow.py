@@ -7,10 +7,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import pyqtSignal, QCoreApplication
 from realtime_processor.plot import Plot
 from datetime import datetime
-from threading import Lock
-import time
 import configparser
-import os
 class MainWindow(QMainWindow):
     """Main window for the real-time plot."""
 

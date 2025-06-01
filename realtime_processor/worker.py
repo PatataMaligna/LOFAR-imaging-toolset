@@ -3,11 +3,9 @@ import time
 from datetime import datetime, timedelta
 from tqdm import tqdm
 from PyQt6.QtCore import QObject, pyqtSignal, QCoreApplication
-from realtime_processor.monitor import detect_new_data_from_stream, get_data_from_subband
+from realtime_processor.monitor import detect_new_data_from_stream
 from realtime_processor.processor import get_subband, get_subband_from_shell, get_rcu_mode
 from realtime_processor.singlestationutil import sb_from_freq
-# from .video import create_video
-
 class DataProcessorWorker(QObject):
     update_signal = pyqtSignal(object, str, int, str, datetime)
     finished = pyqtSignal()
@@ -22,6 +20,7 @@ class DataProcessorWorker(QObject):
         self.realtime_mode = realtime_mode
         self.continue_same_freq = False
         self.continue_incr_freq = False
+        self.same_freq = False
 
     def on_plot_ready(self):
         self.waiting_for_plot = False
@@ -29,6 +28,8 @@ class DataProcessorWorker(QObject):
     def on_frequency_update(self, freq):
         print(f"Frequency updated to: {freq}")
         self.selected_frequency = freq
+        if self.last_used_frequency == self.selected_frequency:
+            self.same_freq = True
 
     def on_continue_same_freq(self):
         print("Continuing with the same frequency.")
@@ -56,7 +57,7 @@ class DataProcessorWorker(QObject):
                 print("No shell script found.")
                 ##DEFAULT parameters
                 rcu_mode = "3"
-                min_subband, max_subband = 51, 461
+                min_subband, max_subband = 167, 167
             else:
                 rcu_mode = get_rcu_mode(shell_script)
                 min_subband, max_subband = get_subband_from_shell(shell_script)
@@ -128,7 +129,7 @@ class DataProcessorWorker(QObject):
                         print("Timeout. Exiting.")
                         break
 
-                print(f"New files detected: {new_files}")
+                # print(f"New files detected: {new_files}")
 
                 for dat_file in new_files:
                     dat_path = os.path.join(self.input_dir, dat_file)
@@ -137,7 +138,7 @@ class DataProcessorWorker(QObject):
                     self.last_obstime = self.get_obstime_from_filename(dat_path)
                     if shell_script:
                         subband = get_subband_from_shell(shell_script)
-                        print(f"Subband from shell script: {subband}")
+                        # print(f"Subband from shell script: {subband}")
                     else:
                         subband = get_subband(header_file)
 
@@ -155,18 +156,19 @@ class DataProcessorWorker(QObject):
                     file_size = os.path.getsize(dat_path)
                     still_observing = True
                     self.last_used_frequency = None
+                    first_block_read = True
                     pbar = tqdm(total=file_size, desc="Analyzing File", unit="B", unit_scale=True, unit_divisor=1024)
 
                     with open(dat_path, "rb") as f:
                         while still_observing:
                             prev_size = last_size
-                            covariance_matrix, last_size, last_time = detect_new_data_from_stream(f, last_size, last_time=last_time)
+                            covariance_matrix, last_size, last_time = detect_new_data_from_stream(f, last_size, first_block_read=first_block_read, last_time=last_time)
                             if covariance_matrix is not None:
                                 self.waiting_for_plot = True
                                 if self.continue_same_freq:
                                     definitive_subband = sb_from_freq(float(self.last_used_frequency) * 1e6, rcu_mode)
                                     self.update_signal.emit(covariance_matrix, dat_path, definitive_subband, rcu_mode, self.last_obstime)
-
+                                    first_block_read = False
                                 if self.continue_incr_freq:
                                     if subband1 <= subband2:
                                         self.update_signal.emit(covariance_matrix, dat_path, subband1, rcu_mode, self.last_obstime)
@@ -174,32 +176,35 @@ class DataProcessorWorker(QObject):
                                     elif subband1 > subband2:
                                         subband1 = saved_subband
                                         self.update_signal.emit(covariance_matrix, dat_path, subband1, rcu_mode, self.last_obstime)
-
+                                    first_block_read = False
                                 if not case_h and not self.continue_same_freq and not self.continue_incr_freq:
                                     while (self.selected_frequency is None 
                                         or self.selected_frequency == self.last_used_frequency
                                     ):
                                         QCoreApplication.processEvents()
                                         time.sleep(0.1)
-                                    # self.selected_frequency = "30"
-                                    print(f"Selected frequency: {self.selected_frequency}")
+                                        if self.same_freq:
+                                            break
+
+                                    # print(f"Selected frequency: {self.selected_frequency}")
                                     subband = sb_from_freq(float(self.selected_frequency) * 1e6, rcu_mode)
                                     print(f"Subband from frequency: {subband}")
-                                    # covariance_matrix = get_data_from_subband(f, subband, subband1, subband2)
                                     self.update_signal.emit(covariance_matrix, dat_path, subband, rcu_mode, self.last_obstime)
 
                                     # Update last used frequency
                                     self.last_used_frequency = self.selected_frequency
-
+                                    self.same_freq = False
                                 elif case_h:
                                     self.update_signal.emit(covariance_matrix, dat_path, subband, rcu_mode, self.last_obstime)
                                 
                                 while self.waiting_for_plot:
                                     QCoreApplication.processEvents()                            
                                     time.sleep(0.05)
+                                if first_block_read:
+                                    None
+                                else:
+                                    self.last_obstime += timedelta(seconds=1)
 
-                                self.last_obstime += timedelta(seconds=1)
-                                start_time = time.time()
                             else:
                                 still_observing = False
                             pbar.update(last_size - prev_size)

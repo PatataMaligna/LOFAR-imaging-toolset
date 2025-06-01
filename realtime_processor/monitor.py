@@ -14,7 +14,7 @@ def wait_for_dat_file(input_dir):
             time.sleep(1)
     return dat_file
 
-def detect_new_data_from_stream(f, last_size, num_rcu=192, realtime_mode=False, last_time=None):
+def detect_new_data_from_stream(f, last_size, first_block_read=False, num_rcu=192, realtime_mode=False, last_time=None):
     """
     Reads new data from the .dat file in fixed-size chunks.
 
@@ -28,6 +28,8 @@ def detect_new_data_from_stream(f, last_size, num_rcu=192, realtime_mode=False, 
         int: The updated file size (new last position).
     """
     matrix_size_bytes = num_rcu * num_rcu * np.dtype(np.complex128).itemsize
+    if first_block_read:
+        f.seek(0)
 
     chunk_bytes = f.read(matrix_size_bytes)
     if not chunk_bytes or len(chunk_bytes) < matrix_size_bytes:
@@ -43,14 +45,15 @@ def detect_new_data_from_stream(f, last_size, num_rcu=192, realtime_mode=False, 
         print(f"Time since last chunk: {speed:.3f} seconds")
     last_time = now
 
-    if realtime_mode and last_size > 0:
-        print(f"Current arrays read: {last_size / matrix_size_bytes}")
-    last_size += matrix_size_bytes
-    print(f"Reading at position {f.tell()}")
+    # if realtime_mode and last_size > 0:
+        # print(f"Current arrays read: {last_size / matrix_size_bytes}")
+    if not first_block_read:
+        last_size += matrix_size_bytes
+    # print(f"Reading at position {f.tell()}")
     # print(chunk)
     return chunk, last_size, last_time
 
-def get_data_from_subband(f, inputSubband, min_subband, max_subband, num_rcu=192):
+def get_data_each_minute(f, inputSubband, min_subband, max_subband, num_rcu=192):
     """
     Reads the specific array covariance for this specific subband
 

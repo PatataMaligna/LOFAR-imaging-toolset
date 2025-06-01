@@ -31,11 +31,6 @@ class Plot(FigureCanvas):
         self.ax.set_xticks([])
         self.ax.set_yticks([])
         self.ax.set_aspect('equal')
-        
-        ## draw exterior circle
-        # circle = Circle((0, 0), 1, edgecolor='k', facecolor='none', alpha=0.7, zorder=0)
-        # self.ax.add_patch(circle)
-        # self.ax.add_artist(circle)
 
         ## elevation rings
         for el in [15, 30, 45, 60, 75]:
