@@ -90,6 +90,15 @@
 
 A sample `.dat` file is provided, along with a `.sh` script inside the data folder, that demonstrates usage with a specific subband (167), which corresponds to a frequency of 32.6 MHz.
 
+#### Enabling Real-Time Processing Mode
+
+To activate real-time processing, append the `--realtime` flag to your execution command. For example:
+
+```bash
+taskset -c 0-1 python3.12 -m realtime_processor.main /path/to/your/data --realtime
+```
+
+This option enables the tool to process incoming data streams in real time as they are received. Only use if access to LOFAR LV614 is granted.
 #### Selecting and Exploring Frequencies
 
 - **Choose a Frequency:**  
